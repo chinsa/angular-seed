@@ -1,18 +1,11 @@
-'use strict';
-/* http://docs.angularjs.org/#!angular.service */
+(function() {
+  'use strict';
+  /* http://docs.angularjs.org/#!angular.service
+  */
+  var myApp;
 
-// Declare app level module which depends on filters, and services
-var myApp = angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.widgets']);
-myApp.run(['$route', '$window', '$rootScope', function($route, $window, $rootScope) {
+  myApp = angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.widgets']);
 
-    $route.when('/page/:index', {template: 'partials/page.html', controller: PageController});
-    $route.when('/view1', {template: 'partials/partial1.html', controller: MyCtrl1});
-    $route.when('/view2', {template: 'partials/partial2.html', controller: MyCtrl2});
-    $route.otherwise({redirectTo: '/view1'});
+  myApp.run(['$route', '$window', '$rootScope', function($route, $window, $rootScope) {}]);
 
-    var self = this;
-
-    $rootScope.$on('$afterRouteChange', function(){
-      $window.scrollTo(0,0);
-    });
-  }]);
+}).call(this);

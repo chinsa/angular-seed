@@ -1,7 +1,15 @@
-'use strict';
-/* http://docs.angularjs.org/#!angular.service */
+(function() {
+  'use strict';
+  /* http://docs.angularjs.org/#!angular.service
+  */
+  var servicesApp;
 
-// Demonstrate how to register services
-// In this case it is a simple constant service.
-angular.module('myApp.services', []).
-  value('version', '0.1');
+  servicesApp = angular.module('myApp.services', []);
+
+  servicesApp.factory('Survey', [
+    '$resource', function($resource) {
+      return $resource('data/survey1.json');
+    }
+  ]);
+
+}).call(this);

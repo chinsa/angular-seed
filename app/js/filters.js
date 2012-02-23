@@ -1,9 +1,17 @@
-'use strict';
-/* http://docs.angularjs.org/#!angular.filter */
+(function() {
+  'use strict';
+  /* http://docs.angularjs.org/#!angular.filter
+  */
+  var filterModule;
 
-angular.module('myApp.filters', []).
-  filter('interpolate', ['version', function(version) {
-    return function(text) {
-      return String(text).replace(/\%VERSION\%/mg, version);
+  filterModule = angular.module('myApp.filters', []);
+
+  filterModule.filter('interpolate', [
+    'version', function(version) {
+      return function(text) {
+        return String(text).replace(/\%VERSION\%/mg, version);
+      };
     }
-  }]);
+  ]);
+
+}).call(this);
