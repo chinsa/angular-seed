@@ -3,12 +3,12 @@
   "type": "questionnaire",
   "title": "Knee Questionnaire",
   "description": "This is a sample knee questionnaire",
-  "pages": [
+  "questions": [
     {
       "name": "question-1",
       "type": "choice",
       "title": "Question 1",
-      "question": "How would you describe the pain you usually have from your knee?",
+      "description": "How would you describe the pain you usually have from your knee?",
       "choices": [
         {
           "name": "none",
@@ -41,7 +41,7 @@
       "name": "question-2",
       "type": "choice",
       "title": "Question 2",
-      "question": "Have you had any trouble with washing and drying yourself (all over) because of your knee?",
+      "description": "Have you had any trouble with washing and drying yourself (all over) because of your knee?",
       "choices": [
         {
           "name": "no-trouble",
@@ -74,7 +74,7 @@
       "name": "question-3",
       "type": "choice",
       "title": "Question 3",
-      "question": "Have you had any trouble getting in and out of a car or using public transport because of your knee? (whichever you tend to use)",
+      "description": "Have you had any trouble getting in and out of a car or using public transport because of your knee? (whichever you tend to use)",
       "choices": [
         {
           "name": "no-trouble",
