@@ -2,17 +2,29 @@
   'use strict';
   /* http://docs.angularjs.org/#!angular.service
   */
-  var myApp;
-
-  myApp = angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.widgets']);
-
-  myApp.run([
-    '$route', '$window', '$rootScope', function($route, $window, $rootScope) {
-      return $route.when('/survey/:survey/step/:step', {
-        template: 'partials/step.html',
-        controller: StepController
-      });
-    }
-  ]);
+  namespace("Questionnaire", {
+    QuestionnaireApplication: [
+      '$route', 'PageManager', function($route, PageManager) {
+        $route.when('/', {
+          pageName: 'list'
+        });
+        $route.when('/q/:questionnaire/p/:page', {
+          pageName: function(route) {
+            return "page-" + route.params.page;
+          }
+        });
+        $route.when('/q/:questionnaire', {
+          pageName: 'page-0'
+        });
+        $route.otherwise({
+          redirectTo: '/'
+        });
+        return PageManager.addPage({
+          name: 'list',
+          template: 'templates/questionnaires.html'
+        });
+      }
+    ]
+  });
 
 }).call(this);

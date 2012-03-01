@@ -1,62 +1,46 @@
 'use strict'
-class @StepController
-  @inject: ['$routeParams','Survey']
-  constructor: ($routeParams, Survey)->
-    @surveyId = $routeParams.survey
-    @step = $routeParams.step
-    @survey = Survey.get(survey: $routeParams.survey, (survey)=>
-      @step = survey.questions[$routeParams.step]
-    )
+namespace('Questionnaire')
 
+# Private base class for Controllers
+class Controller
+  constructor: (@$scope) ->
 
-# App Controllers
-class @SurveyController
-  @$inject: ['$routeParams','Survey']
-  constructor: ($routeParams, Survey)->
-    console.log($routeParams)
-    @survey = Survey.get(survey: $routeParams.survey, ()=>
-      @pages = []
-      @pages.push(new IntroPage(0, @survey.title, @survey.description))
-      questionPages = []
-      for question, index in @survey.questions
-        page = new QuestionPage(question, index+1)
-        questionPages.push(page)
-      Array::push.apply(@pages,questionPages)
-      @pages.push(new ResponsePage(questionPages, @pages.length))
-    )
-    @currentPage = 0
+  # Use this to wire up a helper function from the controller to the scope
+  # So rather than having to do @$scope.someFn = @someFn
+  # You can just write @addHelper('someFn')
+  addHelper: (name)->
+    @$scope[name] = @[name]
 
-  isCurrentPage: (page)->
-    page.index is @currentPage
+# Controls the display of individual pages based on the current page in the PageManager
+class @Questionnaire.PageController extends Controller
+  @$inject: ['$scope','PageManager']
+  constructor: ($scope, @PageManager)->
+    super($scope)
+    # Wire up the helper methods to the scope
+    @addHelper('isCurrent')
+    @addHelper('pageCSSClass')
 
-  hasNextPage: ()->
-    @currentPage < @pages.length-1
+  isCurrent: ()=>
+    @$scope.page.name == @$scope.currentPageName
 
-  hasPreviousPage: ()->
-    @currentPage > 0
+  pageCSSClass: ()=>
+    'current' if @isCurrent()
 
-  goToNextPage: ()->
-    @currentPage += 1
+# Controls the display of the list of questionnaires
+class @Questionnaire.QuestionnaireListController extends @Questionnaire.PageController
+  @$inject: ['$scope','PageManager', 'QuestionnaireService']
+  constructor: ($scope, PageManager, QuestionnaireService)->
+    super($scope, PageManager)
+    QuestionnaireService.list().success (response)=>
+      angular.extend($scope, response) # Merge response into scope
 
-  goToPreviousPage: ()->
-    @currentPage -= 1
-
-  goToPage: (pageIndex)->
-    @currentPage = pageIndex
-
-  canMoveToNext: (page)->
-    page.response? or not page.question?
-
-  selectChoice: (page, choice)->
-    page.response = choice
-
-  responseCSSClass: (page) ->
-    if @isValid(page)
-      'success' 
-    else
-      'warning'
-
-  choiceCSSClass: (page, choice)->
+# Controls the display of questions in a questionnaire
+class @Questionnaire.QuestionController extends @Questionnaire.PageController
+  @$inject: ['$scope', 'PageManager']
+  constructor: ($scope, PageManager)->
+    super($scope, PageManager)
+    @addHelper('choiceCSSClass')
+  choiceCSSClass: (page, choice)=>
     if page.response is choice 
       'blue'
     else

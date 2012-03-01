@@ -1,0 +1,11 @@
+<section id="{{page.name}}" ng:Controller="Questionnaire.QuestionnaireListController" ng:show="isCurrent()" >
+   <header>
+      <h1>{{title}}</h1>
+      <p>{{description}}</p>
+   </header>
+   <ul>
+      <li ng:repeat="questionnaire in questionnaires" >
+         <a title="{{questionnaire.description}}" class="large button radius" ng:href="#/q/{{questionnaire.name}}">{{questionnaire.title}}</a>
+      </li>
+   </ul>
+</section>

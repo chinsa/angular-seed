@@ -1,91 +1,83 @@
 (function() {
   'use strict';
-  this.StepController = (function() {
+  var Controller,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
-    StepController.inject = ['$routeParams', 'Survey'];
+  namespace('Questionnaire');
 
-    function StepController($routeParams, Survey) {
-      var _this = this;
-      this.surveyId = $routeParams.survey;
-      this.step = $routeParams.step;
-      this.survey = Survey.get({
-        survey: $routeParams.survey
-      }, function(survey) {
-        return _this.step = survey.questions[$routeParams.step];
-      });
+  Controller = (function() {
+
+    function Controller($scope) {
+      this.$scope = $scope;
     }
 
-    return StepController;
+    Controller.prototype.addHelper = function(name) {
+      return this.$scope[name] = this[name];
+    };
+
+    return Controller;
 
   })();
 
-  this.SurveyController = (function() {
+  this.Questionnaire.PageController = (function(_super) {
 
-    SurveyController.$inject = ['$routeParams', 'Survey'];
+    __extends(PageController, _super);
 
-    function SurveyController($routeParams, Survey) {
-      var _this = this;
-      console.log($routeParams);
-      this.survey = Survey.get({
-        survey: $routeParams.survey
-      }, function() {
-        var index, page, question, questionPages, _len, _ref;
-        _this.pages = [];
-        _this.pages.push(new IntroPage(0, _this.survey.title, _this.survey.description));
-        questionPages = [];
-        _ref = _this.survey.questions;
-        for (index = 0, _len = _ref.length; index < _len; index++) {
-          question = _ref[index];
-          page = new QuestionPage(question, index + 1);
-          questionPages.push(page);
-        }
-        Array.prototype.push.apply(_this.pages, questionPages);
-        return _this.pages.push(new ResponsePage(questionPages, _this.pages.length));
-      });
-      this.currentPage = 0;
+    PageController.$inject = ['$scope', 'PageManager'];
+
+    function PageController($scope, PageManager) {
+      this.PageManager = PageManager;
+      this.pageCSSClass = __bind(this.pageCSSClass, this);
+      this.isCurrent = __bind(this.isCurrent, this);
+      PageController.__super__.constructor.call(this, $scope);
+      this.addHelper('isCurrent');
+      this.addHelper('pageCSSClass');
     }
 
-    SurveyController.prototype.isCurrentPage = function(page) {
-      return page.index === this.currentPage;
+    PageController.prototype.isCurrent = function() {
+      return this.$scope.page.name === this.$scope.currentPageName;
     };
 
-    SurveyController.prototype.hasNextPage = function() {
-      return this.currentPage < this.pages.length - 1;
+    PageController.prototype.pageCSSClass = function() {
+      if (this.isCurrent()) return 'current';
     };
 
-    SurveyController.prototype.hasPreviousPage = function() {
-      return this.currentPage > 0;
-    };
+    return PageController;
 
-    SurveyController.prototype.goToNextPage = function() {
-      return this.currentPage += 1;
-    };
+  })(Controller);
 
-    SurveyController.prototype.goToPreviousPage = function() {
-      return this.currentPage -= 1;
-    };
+  this.Questionnaire.QuestionnaireListController = (function(_super) {
 
-    SurveyController.prototype.goToPage = function(pageIndex) {
-      return this.currentPage = pageIndex;
-    };
+    __extends(QuestionnaireListController, _super);
 
-    SurveyController.prototype.canMoveToNext = function(page) {
-      return (page.response != null) || !(page.question != null);
-    };
+    QuestionnaireListController.$inject = ['$scope', 'PageManager', 'QuestionnaireService'];
 
-    SurveyController.prototype.selectChoice = function(page, choice) {
-      return page.response = choice;
-    };
+    function QuestionnaireListController($scope, PageManager, QuestionnaireService) {
+      var _this = this;
+      QuestionnaireListController.__super__.constructor.call(this, $scope, PageManager);
+      QuestionnaireService.list().success(function(response) {
+        return angular.extend($scope, response);
+      });
+    }
 
-    SurveyController.prototype.responseCSSClass = function(page) {
-      if (this.isValid(page)) {
-        return 'success';
-      } else {
-        return 'warning';
-      }
-    };
+    return QuestionnaireListController;
 
-    SurveyController.prototype.choiceCSSClass = function(page, choice) {
+  })(this.Questionnaire.PageController);
+
+  this.Questionnaire.QuestionController = (function(_super) {
+
+    __extends(QuestionController, _super);
+
+    QuestionController.$inject = ['$scope', 'PageManager'];
+
+    function QuestionController($scope, PageManager) {
+      this.choiceCSSClass = __bind(this.choiceCSSClass, this);      QuestionController.__super__.constructor.call(this, $scope, PageManager);
+      this.addHelper('choiceCSSClass');
+    }
+
+    QuestionController.prototype.choiceCSSClass = function(page, choice) {
       if (page.response === choice) {
         return 'blue';
       } else {
@@ -93,8 +85,8 @@
       }
     };
 
-    return SurveyController;
+    return QuestionController;
 
-  })();
+  })(this.Questionnaire.PageController);
 
 }).call(this);
