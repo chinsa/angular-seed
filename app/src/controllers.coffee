@@ -1,22 +1,20 @@
 'use strict'
-class Page
-  constructor: (@index, @title, @description, @type='simple')->
+class @StepController
+  @inject: ['$routeParams','Survey']
+  constructor: ($routeParams, Survey)->
+    @surveyId = $routeParams.survey
+    @step = $routeParams.step
+    @survey = Survey.get(survey: $routeParams.survey, (survey)=>
+      @step = survey.questions[$routeParams.step]
+    )
 
-class QuestionPage extends Page
-  constructor: (@question, index)->
-    super(index, @question.title, @question.description, "question-#{@question.type}")
-
-class IntroPage extends Page
-
-class ResponsePage extends Page
-  constructor: (@questionPages, index, title, description)->
-    super(title, description, 'response')
 
 # App Controllers
 class @SurveyController
-  @$inject: ['Survey']
-  constructor: (Survey)->
-    @survey = Survey.get( ()=>
+  @$inject: ['$routeParams','Survey']
+  constructor: ($routeParams, Survey)->
+    console.log($routeParams)
+    @survey = Survey.get(survey: $routeParams.survey, ()=>
       @pages = []
       @pages.push(new IntroPage(0, @survey.title, @survey.description))
       questionPages = []

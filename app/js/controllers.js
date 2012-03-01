@@ -1,67 +1,34 @@
 (function() {
   'use strict';
-  var IntroPage, Page, QuestionPage, ResponsePage,
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+  this.StepController = (function() {
 
-  Page = (function() {
+    StepController.inject = ['$routeParams', 'Survey'];
 
-    function Page(index, title, description, type) {
-      this.index = index;
-      this.title = title;
-      this.description = description;
-      this.type = type != null ? type : 'simple';
+    function StepController($routeParams, Survey) {
+      var _this = this;
+      this.surveyId = $routeParams.survey;
+      this.step = $routeParams.step;
+      this.survey = Survey.get({
+        survey: $routeParams.survey
+      }, function(survey) {
+        return _this.step = survey.questions[$routeParams.step];
+      });
     }
 
-    return Page;
+    return StepController;
 
   })();
 
-  QuestionPage = (function(_super) {
-
-    __extends(QuestionPage, _super);
-
-    function QuestionPage(question, index) {
-      this.question = question;
-      QuestionPage.__super__.constructor.call(this, index, this.question.title, this.question.description, "question-" + this.question.type);
-    }
-
-    return QuestionPage;
-
-  })(Page);
-
-  IntroPage = (function(_super) {
-
-    __extends(IntroPage, _super);
-
-    function IntroPage() {
-      IntroPage.__super__.constructor.apply(this, arguments);
-    }
-
-    return IntroPage;
-
-  })(Page);
-
-  ResponsePage = (function(_super) {
-
-    __extends(ResponsePage, _super);
-
-    function ResponsePage(questionPages, index, title, description) {
-      this.questionPages = questionPages;
-      ResponsePage.__super__.constructor.call(this, title, description, 'response');
-    }
-
-    return ResponsePage;
-
-  })(Page);
-
   this.SurveyController = (function() {
 
-    SurveyController.$inject = ['Survey'];
+    SurveyController.$inject = ['$routeParams', 'Survey'];
 
-    function SurveyController(Survey) {
+    function SurveyController($routeParams, Survey) {
       var _this = this;
-      this.survey = Survey.get(function() {
+      console.log($routeParams);
+      this.survey = Survey.get({
+        survey: $routeParams.survey
+      }, function() {
         var index, page, question, questionPages, _len, _ref;
         _this.pages = [];
         _this.pages.push(new IntroPage(0, _this.survey.title, _this.survey.description));

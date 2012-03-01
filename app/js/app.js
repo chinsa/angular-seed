@@ -6,6 +6,13 @@
 
   myApp = angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.widgets']);
 
-  myApp.run(['$route', '$window', '$rootScope', function($route, $window, $rootScope) {}]);
+  myApp.run([
+    '$route', '$window', '$rootScope', function($route, $window, $rootScope) {
+      return $route.when('/survey/:survey/step/:step', {
+        template: 'partials/step.html',
+        controller: StepController
+      });
+    }
+  ]);
 
 }).call(this);

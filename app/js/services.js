@@ -8,7 +8,7 @@
 
   servicesApp.factory('Survey', [
     '$resource', function($resource) {
-      return $resource('data/survey1.json');
+      return $resource("data/:survey.json");
     }
   ]);
 

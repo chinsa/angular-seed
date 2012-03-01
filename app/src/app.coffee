@@ -6,4 +6,8 @@ myApp = angular.module('myApp', ['myApp.filters', 'myApp.services', 'myApp.widge
 myApp.run [
   '$route', '$window', '$rootScope',
   ($route, $window, $rootScope)->
+    $route.when('/survey/:survey/step/:step',
+      template: 'partials/step.html'
+      controller: StepController
+    )
 ]
