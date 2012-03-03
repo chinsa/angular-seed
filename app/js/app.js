@@ -4,25 +4,19 @@
   */
   namespace("Questionnaire", {
     QuestionnaireApplication: [
-      '$route', 'PageManager', function($route, PageManager) {
-        $route.when('/', {
-          pageName: 'list'
-        });
-        $route.when('/q/:questionnaire/p/:page', {
-          pageName: function(route) {
-            return "page-" + route.params.page;
+      '$route', '$rootScope', function($route, $rootScope) {
+        $route.when('/');
+        $route.when('/:questionnaire');
+        $route.when('/:questionnaire/:question');
+        return $rootScope.pages = [
+          {
+            name: 'questionnaire-list',
+            template: '/templates/questionnaire-list.html'
+          }, {
+            name: 'questionnaire-detail',
+            template: 'templates/questionnaire-detail.html'
           }
-        });
-        $route.when('/q/:questionnaire', {
-          pageName: 'page-0'
-        });
-        $route.otherwise({
-          redirectTo: '/'
-        });
-        return PageManager.addPage({
-          name: 'list',
-          template: 'templates/questionnaires.html'
-        });
+        ];
       }
     ]
   });

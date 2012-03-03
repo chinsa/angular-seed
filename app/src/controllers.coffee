@@ -1,45 +1,39 @@
 'use strict'
 namespace('Questionnaire')
 
-# Private base class for Controllers
-class Controller
-  constructor: (@$scope) ->
-
-  # Use this to wire up a helper function from the controller to the scope
-  # So rather than having to do @$scope.someFn = @someFn
-  # You can just write @addHelper('someFn')
-  addHelper: (name)->
-    @$scope[name] = @[name]
-
-# Controls the display of individual pages based on the current page in the PageManager
-class @Questionnaire.PageController extends Controller
-  @$inject: ['$scope','PageManager']
-  constructor: ($scope, @PageManager)->
-    super($scope)
-    # Wire up the helper methods to the scope
-    @addHelper('isCurrent')
-    @addHelper('pageCSSClass')
-
-  isCurrent: ()=>
-    @$scope.page.name == @$scope.currentPageName
-
-  pageCSSClass: ()=>
-    'current' if @isCurrent()
+class @Questionnaire.ApplicationController
+  @$inject: ['$rootScope']
+  constructor: (@$scope)->
+    @$scope.$on '$afterRouteChange', (scope,current,previous)=>
+      @$scope.questionnaireId = current.params.questionnaire
+      @$scope.questionIndex = current.params.question
 
 # Controls the display of the list of questionnaires
-class @Questionnaire.QuestionnaireListController extends @Questionnaire.PageController
-  @$inject: ['$scope','PageManager', 'QuestionnaireService']
-  constructor: ($scope, PageManager, QuestionnaireService)->
-    super($scope, PageManager)
-    QuestionnaireService.list().success (response)=>
-      angular.extend($scope, response) # Merge response into scope
+class @Questionnaire.QuestionnaireListController
+  @$inject: ['$scope', 'QuestionnaireService']
+  constructor: (@$scope, @QuestionnaireService)->
+    @$scope.showPage = @showPage
+    @QuestionnaireService.list().success (response)=>
+      angular.extend(@$scope, response) # Merge response into scope
+
+  showPage: ()=>
+    # Only show this page if there is no questionnaire selected
+    @$scope.questionnaireId == ''
+
+class @Questionnaire.QuestionnaireController
+  @$inject: ['$scope','QuestionnaireService']
+  constructor: (@$scope, @QuestionnaireService)->
+    @$scope.showPage = @showPage
+    @$scope.$watch 'questionnaireId', ()=>
+      QuestionnaireService.get(@questionnaireId).success (questionnaire)=>
+        angular.extend(@$scope, questionnaire) # Merge response into scope
+  showPage: ()=>
+    @$scope.questionnaireId != '' and not angular.isNumber(@$scope.questionIndex)
 
 # Controls the display of questions in a questionnaire
-class @Questionnaire.QuestionController extends @Questionnaire.PageController
-  @$inject: ['$scope', 'PageManager']
-  constructor: ($scope, PageManager)->
-    super($scope, PageManager)
-    @addHelper('choiceCSSClass')
+class @Questionnaire.QuestionController
+  @$inject: ['$scope']
+  constructor: (@$scope)->
   choiceCSSClass: (page, choice)=>
     if page.response is choice 
       'blue'

@@ -1,80 +1,81 @@
 (function() {
   'use strict';
-  var Controller,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-    __hasProp = Object.prototype.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   namespace('Questionnaire');
 
-  Controller = (function() {
+  this.Questionnaire.ApplicationController = (function() {
 
-    function Controller($scope) {
-      this.$scope = $scope;
-    }
+    ApplicationController.$inject = ['$rootScope'];
 
-    Controller.prototype.addHelper = function(name) {
-      return this.$scope[name] = this[name];
-    };
-
-    return Controller;
-
-  })();
-
-  this.Questionnaire.PageController = (function(_super) {
-
-    __extends(PageController, _super);
-
-    PageController.$inject = ['$scope', 'PageManager'];
-
-    function PageController($scope, PageManager) {
-      this.PageManager = PageManager;
-      this.pageCSSClass = __bind(this.pageCSSClass, this);
-      this.isCurrent = __bind(this.isCurrent, this);
-      PageController.__super__.constructor.call(this, $scope);
-      this.addHelper('isCurrent');
-      this.addHelper('pageCSSClass');
-    }
-
-    PageController.prototype.isCurrent = function() {
-      return this.$scope.page.name === this.$scope.currentPageName;
-    };
-
-    PageController.prototype.pageCSSClass = function() {
-      if (this.isCurrent()) return 'current';
-    };
-
-    return PageController;
-
-  })(Controller);
-
-  this.Questionnaire.QuestionnaireListController = (function(_super) {
-
-    __extends(QuestionnaireListController, _super);
-
-    QuestionnaireListController.$inject = ['$scope', 'PageManager', 'QuestionnaireService'];
-
-    function QuestionnaireListController($scope, PageManager, QuestionnaireService) {
+    function ApplicationController($scope) {
       var _this = this;
-      QuestionnaireListController.__super__.constructor.call(this, $scope, PageManager);
-      QuestionnaireService.list().success(function(response) {
-        return angular.extend($scope, response);
+      this.$scope = $scope;
+      this.$scope.$on('$afterRouteChange', function(scope, current, previous) {
+        _this.$scope.questionnaireId = current.params.questionnaire;
+        return _this.$scope.questionIndex = current.params.question;
       });
     }
 
+    return ApplicationController;
+
+  })();
+
+  this.Questionnaire.QuestionnaireListController = (function() {
+
+    QuestionnaireListController.$inject = ['$scope', 'QuestionnaireService'];
+
+    function QuestionnaireListController($scope, QuestionnaireService) {
+      var _this = this;
+      this.$scope = $scope;
+      this.QuestionnaireService = QuestionnaireService;
+      this.showPage = __bind(this.showPage, this);
+      this.$scope.showPage = this.showPage;
+      this.QuestionnaireService.list().success(function(response) {
+        return angular.extend(_this.$scope, response);
+      });
+    }
+
+    QuestionnaireListController.prototype.showPage = function() {
+      return this.$scope.questionnaireId === '';
+    };
+
     return QuestionnaireListController;
 
-  })(this.Questionnaire.PageController);
+  })();
 
-  this.Questionnaire.QuestionController = (function(_super) {
+  this.Questionnaire.QuestionnaireController = (function() {
 
-    __extends(QuestionController, _super);
+    QuestionnaireController.$inject = ['$scope', 'QuestionnaireService'];
 
-    QuestionController.$inject = ['$scope', 'PageManager'];
+    function QuestionnaireController($scope, QuestionnaireService) {
+      var _this = this;
+      this.$scope = $scope;
+      this.QuestionnaireService = QuestionnaireService;
+      this.showPage = __bind(this.showPage, this);
+      this.$scope.showPage = this.showPage;
+      this.$scope.$watch('questionnaireId', function() {
+        return QuestionnaireService.get(_this.questionnaireId).success(function(questionnaire) {
+          return angular.extend(_this.$scope, questionnaire);
+        });
+      });
+    }
 
-    function QuestionController($scope, PageManager) {
-      this.choiceCSSClass = __bind(this.choiceCSSClass, this);      QuestionController.__super__.constructor.call(this, $scope, PageManager);
-      this.addHelper('choiceCSSClass');
+    QuestionnaireController.prototype.showPage = function() {
+      return this.$scope.questionnaireId !== '' && !angular.isNumber(this.$scope.questionIndex);
+    };
+
+    return QuestionnaireController;
+
+  })();
+
+  this.Questionnaire.QuestionController = (function() {
+
+    QuestionController.$inject = ['$scope'];
+
+    function QuestionController($scope) {
+      this.$scope = $scope;
+      this.choiceCSSClass = __bind(this.choiceCSSClass, this);
     }
 
     QuestionController.prototype.choiceCSSClass = function(page, choice) {
@@ -87,6 +88,6 @@
 
     return QuestionController;
 
-  })(this.Questionnaire.PageController);
+  })();
 
 }).call(this);
