@@ -17,27 +17,6 @@
       this.questionnaireListPromise = null;
     }
 
-    QuestionnaireService.prototype.deleteQuestionPages = function() {};
-
-    QuestionnaireService.prototype.createQuestionsPages = function(questionnaire) {
-      var i, question, _len, _ref, _results;
-      this.questionPages = [];
-      _ref = questionnaire.questions;
-      _results = [];
-      for (i = 0, _len = _ref.length; i < _len; i++) {
-        question = _ref[i];
-        _results.push(this.questionPages.push({
-          name: "page-" + i,
-          type: "question",
-          template: "templates/question-" + question.type + ".html",
-          question: question,
-          next: i + 1 < questionnaire.questions.length ? "" + questionnaire._id + "-" + questionnaire.questions[i + 1].name : void 0,
-          previous: i > 0 ? "" + questionnaire._id + "-" + questionnaire.questions[i - 1].name : void 0
-        }));
-      }
-      return _results;
-    };
-
     QuestionnaireService.prototype.list = function() {
       var _this = this;
       this.$log.log("QuestionnaireService: List Requested");

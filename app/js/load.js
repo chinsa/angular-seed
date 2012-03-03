@@ -11,12 +11,14 @@
   }, {
     services: "/js/services.js"
   }, {
+    services: "/js/filters.js"
+  }, {
     application: "/js/app.js"
   });
 
   head.ready("application", function() {
     var module;
-    module = angular.module('QuestionnaireApp', ['Services']);
+    module = angular.module('QuestionnaireApp', ['Services', 'Filters']);
     return module.run(Questionnaire.QuestionnaireApplication);
   });
 

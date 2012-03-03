@@ -1,10 +1,16 @@
 {
-  "_id": "oss",
+  "_id": "osis",
   "type": "questionnaire",
-  "title": "Oxford Shoulder Score",
-  "description": "Problems with your shoulder",
+  "title": "Oxford Shoulder Instability Score",
+  "description": "Problems with your shoulder...",
   "questions":
   [
+    {
+      "name": "patient-id",
+      "type": "identity",
+      "title": "Patient Identification",
+      "description": "Please identify yourself with the following information."
+    },  
     {
       "name": "which-shoulder",
       "type": "choice",
@@ -20,21 +26,21 @@
       "name": "dislocations",
       "type": "choice",
       "title": "Dislocations in the last 6 months",
-      "description": "During the last 6 months ...\nhow many times has your shoulder slipped out of joint (or dislocated)?",
+      "description": "<strong>During the last 6 months ...</strong><br/>how many times has your shoulder slipped out of joint (or dislocated)?",
       "choices":
       [
-        { "name": "never", "title": "Not at all\nin 6 months", "value": 1 },
-        { "name": "occasionally", "title": "1 or 2 times\nin 6 months", "value": 2 },
-        { "name": "monthly", "title": "1 or 2 times\nper month", "value": 3 },
-        { "name": "weekly", "title": "1 or 2 times\nper week", "value": 3 },
-        { "name": "daily", "title": "More often than\n1 or 2 times per week", "value": 4 }
+        { "name": "never", "title": "Not at all<br/>in 6 months", "value": 1 },
+        { "name": "occasionally", "title": "1 or 2 times<br/>in 6 months", "value": 2 },
+        { "name": "monthly", "title": "1 or 2 times<br/>per month", "value": 3 },
+        { "name": "weekly", "title": "1 or 2 times<br/>per week", "value": 3 },
+        { "name": "daily", "title": "More often than<br/>1 or 2 times per week", "value": 4 }
       ]
     },
     {
       "name": "difficulty-with-clothing",
       "type": "choice",
       "title": "Difficulty putting on clothing",
-      "description": "During the last 3 months...\nhave you had any trouble have you had any trouble (or worry) with putting on a t-shirt or pullover because of your shoulder?",
+      "description": "During the last 3 months...<br/>have you had any trouble have you had any trouble (or worry) with putting on a t-shirt or pullover because of your shoulder?",
       "choices":
       [
         { "name": "no-trouble", "title": "No trouble at all", "value": 1 },

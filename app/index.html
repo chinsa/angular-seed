@@ -13,11 +13,14 @@
   <script type="text/javascript" src="/js/load.js"></script>
 </head>
 <body>
-  <div class="container" ng:cloak>
+  <div class="container">
+   
     <div class="row">
       <div class="twelve columns">
-        <ng:include src="page.template" ng:repeat="page in pages" />
+        <ng:include src="pageTemplate"/>
+      </div>
     </div>
+  
   </div>
 </body>
 </html>

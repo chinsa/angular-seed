@@ -10,22 +10,6 @@ class QuestionnaireService
     @questionnairePromises = []
     @questionnaireListPromise = null
     
-  deleteQuestionPages: ()->
-#    for page in @questionPages
-#      delete @$rootScope.removePage(page.name)
-
-  createQuestionsPages: (questionnaire)->
-    @questionPages = []
-    for question, i in questionnaire.questions
-      @questionPages.push
-        name: "page-#{i}"
-        type: "question"
-        template: "templates/question-#{question.type}.html"
-        question: question
-        next: "#{questionnaire._id}-#{questionnaire.questions[i+1].name}" if i+1 < questionnaire.questions.length
-        previous: "#{questionnaire._id}-#{questionnaire.questions[i-1].name}" if i > 0
-    #   @PageManager.addPages(@questionPages)
-
   list: ()->
     @$log.log "QuestionnaireService: List Requested"
     unless @questionnaireListPromise?    
