@@ -73,8 +73,12 @@ class @Questionnaire.QuestionController
   isValid: ()=>
     @$scope.answer?.isValid
 
+class @Questionnaire.IdentityQuestionController
+  @$inject: ['$scope']
+  constructor: (@$scope)->
+
 # Controls the behaviour of a multichoice question
-class @Questionnaire.QuestionChoiceController
+class @Questionnaire.ChoiceQuestionController
   @$inject: ['$scope']
   constructor: (@$scope)->
     @$scope.choiceCSSClass = @choiceCSSClass

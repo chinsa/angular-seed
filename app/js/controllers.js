@@ -154,11 +154,23 @@
 
   })();
 
-  this.Questionnaire.QuestionChoiceController = (function() {
+  this.Questionnaire.IdentityQuestionController = (function() {
 
-    QuestionChoiceController.$inject = ['$scope'];
+    IdentityQuestionController.$inject = ['$scope'];
 
-    function QuestionChoiceController($scope) {
+    function IdentityQuestionController($scope) {
+      this.$scope = $scope;
+    }
+
+    return IdentityQuestionController;
+
+  })();
+
+  this.Questionnaire.ChoiceQuestionController = (function() {
+
+    ChoiceQuestionController.$inject = ['$scope'];
+
+    function ChoiceQuestionController($scope) {
       this.$scope = $scope;
       this.selectChoice = __bind(this.selectChoice, this);
       this.choiceCSSClass = __bind(this.choiceCSSClass, this);
@@ -166,7 +178,7 @@
       this.$scope.selectChoice = this.selectChoice;
     }
 
-    QuestionChoiceController.prototype.choiceCSSClass = function(choice) {
+    ChoiceQuestionController.prototype.choiceCSSClass = function(choice) {
       var _ref;
       if (((_ref = this.$scope.answer) != null ? _ref.choice : void 0) === choice) {
         return 'blue';
@@ -175,12 +187,12 @@
       }
     };
 
-    QuestionChoiceController.prototype.selectChoice = function(choice) {
+    ChoiceQuestionController.prototype.selectChoice = function(choice) {
       this.$scope.answer.choice = choice;
       return this.$scope.answer.isValid = choice != null;
     };
 
-    return QuestionChoiceController;
+    return ChoiceQuestionController;
 
   })();
 

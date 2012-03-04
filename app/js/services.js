@@ -1,7 +1,5 @@
 (function() {
   'use strict';
-  /* http://docs.angularjs.org/#!angular.service
-  */
   var QuestionnaireService, ResponseManager, Services;
 
   Services = angular.module('Services', []);

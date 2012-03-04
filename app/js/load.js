@@ -3,6 +3,8 @@
   head.js({
     jquery: "/lib/jquery.min.js"
   }, {
+    maskedinput: "/lib/jquery.maskedinput-1.3.js"
+  }, {
     namespace: "/lib/namespace.min.js"
   }, {
     angular: "/lib/angular/angular.js"
@@ -11,14 +13,16 @@
   }, {
     services: "/js/services.js"
   }, {
-    services: "/js/filters.js"
+    WidgetUtils: "/js/widgetutils.js"
+  }, {
+    services: "/js/widgets.js"
   }, {
     application: "/js/app.js"
   });
 
   head.ready("application", function() {
     var module;
-    module = angular.module('QuestionnaireApp', ['Services', 'Filters']);
+    module = angular.module('QuestionnaireApp', ['Services', 'Widgets', 'WidgetUtilsModule']);
     return module.run(Questionnaire.QuestionnaireApplication);
   });
 

@@ -1,5 +1,4 @@
 'use strict'
-### http://docs.angularjs.org/#!angular.service ###
 
 Services = angular.module('Services', [])
 
