@@ -9,10 +9,16 @@ Widgets.directive 'uiMasked', ['widgetUtils',(widgetUtils)->
     valExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:value')
     maskExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:mask')
     isvalidExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:isvalid')
+    attributes = {}
+    for attr in compileElement[0].attributes when attr.name.slice(0,3) != 'ui:'
+      attributes[attr.name] = attr.value
+    for key, attr of attributes
+      compileElement.removeAttr(key)
     options = widgetUtils.getOptions(compileElement, defaults)
     
     ($scope, linkingElement)->
-      inputElement = $('<input type="text"/>')
+      inputElement = $("<input type='text' />")
+      inputElement.attr(attributes)
       $(linkingElement).append(inputElement)
       $(inputElement).mask(maskExpr())
 

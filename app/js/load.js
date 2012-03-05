@@ -5,6 +5,8 @@
   }, {
     maskedinput: "/lib/jquery.maskedinput-1.3.js"
   }, {
+    jqueryUI: "/lib/jquery.ui/jquery-ui-1.8.18.min.js"
+  }, {
     namespace: "/lib/namespace.min.js"
   }, {
     angular: "/lib/angular/angular.js"

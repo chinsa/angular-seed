@@ -8,17 +8,30 @@
     'widgetUtils', function(widgetUtils) {
       return {
         compile: function(compileElement) {
-          var defaults, isvalidExpr, maskExpr, options, valExpr;
+          var attr, attributes, defaults, isvalidExpr, key, maskExpr, options, valExpr, _i, _len, _ref;
           defaults = {
             allowInvalid: false
           };
           valExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:value');
           maskExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:mask');
           isvalidExpr = widgetUtils.parseAttrExpr(compileElement, 'ui:isvalid');
+          attributes = {};
+          _ref = compileElement[0].attributes;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            attr = _ref[_i];
+            if (attr.name.slice(0, 3) !== 'ui:') {
+              attributes[attr.name] = attr.value;
+            }
+          }
+          for (key in attributes) {
+            attr = attributes[key];
+            compileElement.removeAttr(key);
+          }
           options = widgetUtils.getOptions(compileElement, defaults);
           return function($scope, linkingElement) {
             var handleEvent, inputElement;
-            inputElement = $('<input type="text"/>');
+            inputElement = $("<input type='text' />");
+            inputElement.attr(attributes);
             $(linkingElement).append(inputElement);
             $(inputElement).mask(maskExpr());
             handleEvent = function() {
