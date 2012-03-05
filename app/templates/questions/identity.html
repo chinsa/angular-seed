@@ -5,6 +5,7 @@
 </div>
 <div class="form-field">
     <label for="dob">Date of Birth:</label>
-    <input ui:Date name="dob" id="dob" ng:model="answer.dob"/>
+    <ui:date id="dob" ng:model="answer.dob"/>
 </div>
+<pre>{{answer|json}}</pre>
 </form>
