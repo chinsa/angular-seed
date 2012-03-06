@@ -25,10 +25,20 @@ Widgets.directive 'uiMasked', ['$parse',($parse)->
     el.keypress(onChange).keydown(onChange)
 ]
 
-Widgets.directive 'uiDate', ()->
+Widgets.directive 'uiDate', ['$parse',($parse)->
   replace: true
   template: "<input type='text'></input>"
   link: ($scope, el, attrs)->
+    isValidExp = $parse(attrs.uiIsvalid) if attrs.uiIsvalid?
+    modelExp = $parse(attrs.ngModel)
     $(el).datepicker
       changeMonth: true
       changeYear: true
+      dateFormat: 'dd/mm/yy'
+
+      onClose: (date, picker)=>
+        modelExp.assign($scope, date)
+        isDate = /\d\d\/\d\d\/\d\d\d\d/.test(date)
+        isValidExp?.assign($scope, isDate)
+        $scope.$digest()
+]

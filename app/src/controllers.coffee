@@ -14,6 +14,8 @@ class @Questionnaire.ApplicationController
     @$rootScope.questionIndex = Number(urlParts?[2])
     if @$rootScope.questionnaireId isnt '' and @$rootScope.questionIndex > 0
       @$rootScope.pageTemplate = '/templates/question.html'
+    else if @$rootScope.questionnaireId isnt '' and urlParts?[2] == 'summary'
+      @$rootScope.pageTemplate = '/templates/questionnaire-summary.html'
     else if @$rootScope.questionnaireId isnt ''
       @$rootScope.pageTemplate = '/templates/questionnaire-detail.html'
     else
@@ -60,15 +62,21 @@ class @Questionnaire.QuestionController
     $scope.$watch("questionIndex", @onQuestionChanged)
   
   onQuestionChanged: ()=>
-    @QuestionnaireService.get(@$scope.questionnaireId).success (questionnaire)=>
+    @QuestionnaireService.get(@$scope.questionnaireId)
+    .success((questionnaire)=>
       questions = questionnaire.questions
       index = @$scope.questionIndex-1 # questionIndex is 1-based
       question = questions[index]
       @$scope.question = question
       @$scope.answer = @$scope.response.answers[index]
       @$scope.questionTemplate = "/templates/questions/#{question.type}.html"
-      @$scope.next = ()=> if index < questions.length-1 then @$location.path("/#{@$scope.questionnaireId}/#{index+2}")
+      @$scope.next = ()=>
+        if index < questions.length-1
+          @$location.path("/#{@$scope.questionnaireId}/#{index+2}")
+        else
+          @$location.path("/#{@$scope.questionnaireId}/summary")
       @$scope.back = ()=> @$location.path("/#{@$scope.questionnaireId}/#{index}")
+    )
 
   isValid: ()=>
     @$scope.answer?.isValid
@@ -76,6 +84,9 @@ class @Questionnaire.QuestionController
 class @Questionnaire.IdentityQuestionController
   @$inject: ['$scope']
   constructor: (@$scope)->
+    @$scope.$watch 'answer.nhsIsValid && answer.dobIsValid', (value)=>
+      @$scope.answer.isValid = value
+      @$scope.answer.description = "#{@$scope.answer.nhs} : #{@$scope.answer.dob}"
 
 # Controls the behaviour of a multichoice question
 class @Questionnaire.ChoiceQuestionController
@@ -93,3 +104,4 @@ class @Questionnaire.ChoiceQuestionController
   selectChoice: (choice)=>
     @$scope.answer.choice = choice
     @$scope.answer.isValid = choice?
+    @$scope.answer.description = choice.title

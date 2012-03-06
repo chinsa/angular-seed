@@ -1,7 +1,7 @@
 <section ng:controller="Questionnaire.QuestionController" class="page">
     <header>
         <button class="large button radius back" ng:click="back()">Back</button>
-        <button class="large button radius next" disabled="{{!isValid()}}" ng:click="next()" >Next</button>
+        <button class="large button radius next" show="answer.isValid" ng:click="next()" >Next</button>
         <h1>{{questionnaire.title}}</h1>
     </header>
     <h2>{{question.title}}</h2>

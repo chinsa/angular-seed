@@ -29,6 +29,8 @@
       this.$rootScope.questionIndex = Number(urlParts != null ? urlParts[2] : void 0);
       if (this.$rootScope.questionnaireId !== '' && this.$rootScope.questionIndex > 0) {
         return this.$rootScope.pageTemplate = '/templates/question.html';
+      } else if (this.$rootScope.questionnaireId !== '' && (urlParts != null ? urlParts[2] : void 0) === 'summary') {
+        return this.$rootScope.pageTemplate = '/templates/questionnaire-summary.html';
       } else if (this.$rootScope.questionnaireId !== '') {
         return this.$rootScope.pageTemplate = '/templates/questionnaire-detail.html';
       } else {
@@ -137,6 +139,8 @@
         _this.$scope.next = function() {
           if (index < questions.length - 1) {
             return _this.$location.path("/" + _this.$scope.questionnaireId + "/" + (index + 2));
+          } else {
+            return _this.$location.path("/" + _this.$scope.questionnaireId + "/summary");
           }
         };
         return _this.$scope.back = function() {
@@ -159,7 +163,12 @@
     IdentityQuestionController.$inject = ['$scope'];
 
     function IdentityQuestionController($scope) {
+      var _this = this;
       this.$scope = $scope;
+      this.$scope.$watch('answer.nhsIsValid && answer.dobIsValid', function(value) {
+        _this.$scope.answer.isValid = value;
+        return _this.$scope.answer.description = "" + _this.$scope.answer.nhs + " : " + _this.$scope.answer.dob;
+      });
     }
 
     return IdentityQuestionController;
@@ -189,7 +198,8 @@
 
     ChoiceQuestionController.prototype.selectChoice = function(choice) {
       this.$scope.answer.choice = choice;
-      return this.$scope.answer.isValid = choice != null;
+      this.$scope.answer.isValid = choice != null;
+      return this.$scope.answer.description = choice.title;
     };
 
     return ChoiceQuestionController;

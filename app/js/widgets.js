@@ -33,17 +33,31 @@
     }
   ]);
 
-  Widgets.directive('uiDate', function() {
-    return {
-      replace: true,
-      template: "<input type='text'></input>",
-      link: function($scope, el, attrs) {
-        return $(el).datepicker({
-          changeMonth: true,
-          changeYear: true
-        });
-      }
-    };
-  });
+  Widgets.directive('uiDate', [
+    '$parse', function($parse) {
+      return {
+        replace: true,
+        template: "<input type='text'></input>",
+        link: function($scope, el, attrs) {
+          var isValidExp, modelExp,
+            _this = this;
+          if (attrs.uiIsvalid != null) isValidExp = $parse(attrs.uiIsvalid);
+          modelExp = $parse(attrs.ngModel);
+          return $(el).datepicker({
+            changeMonth: true,
+            changeYear: true,
+            dateFormat: 'dd/mm/yy',
+            onClose: function(date, picker) {
+              var isDate;
+              modelExp.assign($scope, date);
+              isDate = /\d\d\/\d\d\/\d\d\d\d/.test(date);
+              if (isValidExp != null) isValidExp.assign($scope, isDate);
+              return $scope.$digest();
+            }
+          });
+        }
+      };
+    }
+  ]);
 
 }).call(this);
