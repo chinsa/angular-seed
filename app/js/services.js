@@ -1,16 +1,16 @@
 (function() {
   'use strict';
-  var QuestionnaireService, ResponseManager, Services;
+  var QuestionnaireService, ResponseManager, RouteHandler, Services,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   Services = angular.module('Services', []);
 
   QuestionnaireService = (function() {
 
-    function QuestionnaireService($http, $rootScope, $routeParams, $log) {
+    function QuestionnaireService($http, $log) {
       this.$http = $http;
-      this.$rootScope = $rootScope;
       this.$log = $log;
-      this.$log.log("QuestionnaireService: Initializing QuestionnaireService");
+      this.$log.log("QuestionnaireService: Initializing");
       this.questionnairePromises = [];
       this.questionnaireListPromise = null;
     }
@@ -46,8 +46,53 @@
   })();
 
   Services.factory("QuestionnaireService", [
-    '$http', '$rootScope', '$routeParams', '$log', function($http, $rootScope, $routeParams, $log) {
-      return new QuestionnaireService($http, $rootScope, $routeParams, $log);
+    '$http', '$log', function($http, $log) {
+      return new QuestionnaireService($http, $log);
+    }
+  ]);
+
+  RouteHandler = (function() {
+
+    function RouteHandler($routeProvider, $rootScope, $log) {
+      var _this = this;
+      this.$routeProvider = $routeProvider;
+      this.$rootScope = $rootScope;
+      this.$log = $log;
+      this.redirectTo = __bind(this.redirectTo, this);
+      this.handle = __bind(this.handle, this);
+      this.$log.log("RouteHandler: Initializing");
+      this.$rootScope.$on('$afterRouteChange', function(current, previous) {
+        if ((current != null ? current.template : void 0) != null) {
+          _this.$log.log("RouteHandler: updating page template for route: " + current.name + " to " + current.template);
+          _this.$rootScope.pageTemplate = current.template;
+        }
+        if ((current != null ? current.handler : void 0) != null) {
+          _this.$log.log("RouteHandler: running handler for route: " + current.name);
+          current.handler(current, previous);
+        }
+        if (!(((current != null ? current.template : void 0) != null) || ((current != null ? current.handler : void 0) != null))) {
+          return _this.$log.log("RouteHandler: unhandled route: " + (current != null ? current.name : void 0));
+        }
+      });
+    }
+
+    RouteHandler.prototype.handle = function(path, options) {
+      if (options == null) options = {};
+      this.$log.log("RouteHandler: Create handler: " + path);
+      return this.$routeProvider.when(path, options);
+    };
+
+    RouteHandler.prototype.redirectTo = function(path) {
+      return this.$location.path("" + path);
+    };
+
+    return RouteHandler;
+
+  })();
+
+  Services.factory("RouteHandler", [
+    '$routeProvider', '$rootScope', '$log', function($routeProvider, $rootScope, $log) {
+      return new RouteHandler($routeProvider, $rootScope, $log);
     }
   ]);
 
