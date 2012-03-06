@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v0.10.7-e86bafec
+ * @license AngularJS v0.10.7-42f62c25
  * (c) 2010-2012 AngularJS http://angularjs.org
  * License: MIT
  */
@@ -97,6 +97,7 @@ var $boolean          = 'boolean',
     angular           = window.angular || (window.angular = {}),
     angularModule,
     /** @name angular.module.ng */
+    angularInputType  = extensionMap(angular, 'inputType', lowercase),
     nodeName_,
     uid               = ['0', '0', '0'],
     DATE_ISOSTRING_LN = 24;
@@ -277,6 +278,17 @@ identity.$inject = [];
 
 function valueFn(value) {return function() {return value;};}
 
+function extensionMap(angular, name, transform) {
+  var extPoint;
+  return angular[name] || (extPoint = angular[name] = function(name, fn, prop){
+    name = (transform || identity)(name);
+    if (isDefined(fn)) {
+      extPoint[name] = extend(fn, prop || {});
+    }
+    return extPoint[name];
+  });
+}
+
 /**
  * @ngdoc function
  * @name angular.isUndefined
@@ -408,11 +420,6 @@ function isWindow(obj) {
 
 function isScope(obj) {
   return obj && obj.$evalAsync && obj.$watch;
-}
-
-
-function isFile(obj) {
-  return toString.apply(obj) === '[object File]';
 }
 
 
@@ -1155,7 +1162,7 @@ function setupModuleLoader(window) {
            * @param {Function} directiveFactory Factory function for creating new instance of
            * directives.
            * @description
-           * See {@link angular.module.ng.$compileProvider.directive $compileProvider.directive()}.
+           * See {@link angular.module.ng.$compileProvider#directive $compileProvider.directive()}.
            */
           directive: invokeLater('$compileProvider', 'directive'),
 
@@ -1224,7 +1231,7 @@ function setupModuleLoader(window) {
  * - `codeName` â€“ `{string}` â€“ Code name of the release, such as "jiggling-armfat".
  */
 var version = {
-  full: '0.10.7-e86bafec',    // all of these placeholder strings will be replaced by rake's
+  full: '0.10.7-42f62c25',    // all of these placeholder strings will be replaced by rake's
   major: 0,    // compile task
   minor: 10,
   dot: 7,
@@ -1281,8 +1288,6 @@ function publishExternalAPI(angular){
             form: ngFormDirective,
             script: scriptTemplateLoader,
             select: selectDirective,
-            style: styleDirective,
-            onload: onloadDirective,
             option: optionDirective,
             ngBind: ngBindDirective,
             ngBindHtml: ngBindHtmlDirective,
@@ -1309,13 +1314,7 @@ function publishExternalAPI(angular){
             ngSwitchDefault: ngSwitchDefaultDirective,
             ngOptions: ngOptionsDirective,
             ngView: ngViewDirective,
-            ngTransclude: ngTranscludeDirective,
-            ngModel: ngModelDirective,
-            ngList: ngListDirective,
-            ngChange: ngChangeDirective,
-            ngModelInstant: ngModelInstantDirective,
-            required: requiredDirective,
-            ngRequired: requiredDirective
+            ngTransclude: ngTranscludeDirective
           }).
         directive(ngEventDirectives).
         directive(ngAttributeAliasDirectives);
@@ -1327,12 +1326,14 @@ function publishExternalAPI(angular){
       $provide.service('$exceptionHandler', $ExceptionHandlerProvider);
       $provide.service('$filter', $FilterProvider);
       $provide.service('$interpolate', $InterpolateProvider);
+      $provide.service('$formFactory', $FormFactoryProvider);
       $provide.service('$http', $HttpProvider);
       $provide.service('$httpBackend', $HttpBackendProvider);
       $provide.service('$location', $LocationProvider);
       $provide.service('$log', $LogProvider);
       $provide.service('$parse', $ParseProvider);
       $provide.service('$resource', $ResourceProvider);
+      $provide.service('$resource2', $Resource2Provider);
       $provide.service('$route', $RouteProvider);
       $provide.service('$routeParams', $RouteParamsProvider);
       $provide.service('$rootScope', $RootScopeProvider);
@@ -1708,7 +1709,7 @@ function inferInjectionArgs(fn) {
  * @description
  *
  * Use `$provide` to register new providers with the `$injector`. The providers are the factories for the instance.
- * The providers share the same name as the instance they create with the `Provider` suffixed to them.
+ * The providers share the same name as the instance they create with the `Provide` suffixed to them.
  *
  * A provider is an object with a `$get()` method. The injector calls the `$get` method to create a new instance of
  * a service. The Provider can have additional methods which would allow for configuration of the provider.
@@ -1759,7 +1760,7 @@ function inferInjectionArgs(fn) {
  *
  * Register a provider for a service. The providers can be retrieved and can have additional configuration methods.
  *
- * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provider'` key.
+ * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provide'` key.
  * @param {(Object|function())} provider If the provider is:
  *
  *   - `Object`: then it should have a `$get` method. The `$get` method will be invoked using
@@ -1778,7 +1779,7 @@ function inferInjectionArgs(fn) {
  *
  * A short hand for configuring services if only `$get` method is required.
  *
- * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provider'` key.
+ * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provide'` key.
  * @param {function()} $getFn The $getFn for the instance creation. Internally this is a short hand for
  * `$provide.service(name, {$get:$getFn})`.
  * @returns {Object} registered provider instance
@@ -1793,7 +1794,7 @@ function inferInjectionArgs(fn) {
  *
  * A short hand for configuring services if the `$get` method is a constant.
  *
- * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provider'` key.
+ * @param {string} name The name of the instance. NOTE: the provider will be available under `name + 'Provide'` key.
  * @param {*} value The value.
  * @returns {Object} registered provider instance
  */
@@ -2677,13 +2678,11 @@ function createEventHandler(element) {
         event.returnValue = false; //ie
       };
     }
-
     if (!event.stopPropagation) {
       event.stopPropagation = function() {
         event.cancelBubble = true; //ie
       };
     }
-
     if (!event.target) {
       event.target = event.srcElement || document;
     }
@@ -2707,17 +2706,10 @@ function createEventHandler(element) {
 
     // Remove monkey-patched methods (IE),
     // as they would cause memory leaks in IE8.
-    if (msie < 8) {
-      // IE7 does not allow to delete property on native object
-      event.preventDefault = null;
-      event.stopPropagation = null;
-      event.isDefaultPrevented = null;
-    } else {
-      // It shouldn't affect normal browsers (native methods are defined on prototype).
-      delete event.preventDefault;
-      delete event.stopPropagation;
-      delete event.isDefaultPrevented;
-    }
+    // It shouldn't affect normal browsers, as their native methods are defined on prototype.
+    delete event.preventDefault;
+    delete event.stopPropagation;
+    delete event.isDefaultPrevented;
   };
   eventHandler.fns = [];
   return eventHandler;
@@ -3497,12 +3489,12 @@ function $BrowserProvider(){
  *
  * @returns {object} Newly created cache object with the following set of methods:
  *
- * - `{object}` `info()` â€” Returns id, size, and options of cache.
- * - `{void}` `put({string} key, {*} value)` â€” Puts a new key-value pair into the cache.
- * - `{{*}} `get({string} key) â€” Returns cached value for `key` or undefined for cache miss.
- * - `{void}` `remove({string} key) â€” Removes a key-value pair from the cache.
+ * - `{string}` `id()` â€” Returns id or name of the cache.
+ * - `{number}` `size()` â€” Returns number of items currently in the cache
+ * - `{void}` `put({string} key, {*} value)` â€” Puts a new key-value pair into the cache
+ * - `{(*}} `get({string} key) â€” Returns cached value for `key` or undefined for cache miss.
+ * - `{void}` `remove{string} key) â€” Removes a key-value pair from the cache.
  * - `{void}` `removeAll() â€” Removes all cached values.
- * - `{void}` `destroy() â€” Removes references to this cache from $cacheFactory.
  *
  */
 function $CacheFactoryProvider() {
@@ -5936,6 +5928,419 @@ function orderByFilter($parse){
 }
 
 /**
+ * @ngdoc object
+ * @name angular.module.ng.$formFactory
+ *
+ * @description
+ * Use `$formFactory` to create a new instance of a {@link angular.module.ng.$formFactory.Form Form}
+ * controller or to find the nearest form instance for a given DOM element.
+ *
+ * The form instance is a collection of widgets, and is responsible for life cycle and validation
+ * of widget.
+ *
+ * Keep in mind that both form and widget instances are {@link api/angular.module.ng.$rootScope.Scope scopes}.
+ *
+ * @param {Form=} parentForm The form which should be the parent form of the new form controller.
+ *   If none specified default to the `rootForm`.
+ * @returns {Form} A new {@link angular.module.ng.$formFactory.Form Form} instance.
+ *
+ * @example
+ *
+ * This example shows how one could write a widget which would enable data-binding on
+ * `contenteditable` feature of HTML.
+ *
+    <doc:example module="formModule">
+      <doc:source>
+        <script>
+          function EditorCntl($scope) {
+            $scope.htmlContent = '<b>Hello</b> <i>World</i>!';
+          }
+
+          HTMLEditorWidget.$inject = ['$scope', '$element', '$sanitize'];
+          function HTMLEditorWidget(scope, element, $sanitize) {
+            scope.$parseModel = function() {
+              // need to protect for script injection
+              try {
+                scope.$viewValue = $sanitize(
+                  scope.$modelValue || '');
+                if (this.$error.HTML) {
+                  // we were invalid, but now we are OK.
+                  scope.$emit('$valid', 'HTML');
+                }
+              } catch (e) {
+                // if HTML not parsable invalidate form.
+                scope.$emit('$invalid', 'HTML');
+              }
+            }
+
+            scope.$render = function() {
+              element.html(this.$viewValue);
+            }
+
+            element.bind('keyup', function() {
+              scope.$apply(function() {
+                scope.$emit('$viewChange', element.html());
+              });
+            });
+          }
+
+       angular.module('formModule', [], function($compileProvider){
+         $compileProvider.directive('ngHtmlEditorModel', function ($formFactory) {
+           return function(scope, element, attr) {
+             var form = $formFactory.forElement(element),
+                 widget;
+             element.attr('contentEditable', true);
+             widget = form.$createWidget({
+               scope: scope,
+               model: attr.ngHtmlEditorModel,
+               controller: HTMLEditorWidget,
+               controllerArgs: {$element: element}});
+             // if the element is destroyed, then we need to
+             // notify the form.
+             element.bind('$destroy', function() {
+               widget.$destroy();
+             });
+           };
+         });
+       });
+     </script>
+     <form name='editorForm' ng:controller="EditorCntl">
+       <div ng:html-editor-model="htmlContent"></div>
+       <hr/>
+       HTML: <br/>
+       <textarea ng:model="htmlContent" cols="80"></textarea>
+       <hr/>
+       <pre>editorForm = {{editorForm|json}}</pre>
+     </form>
+   </doc:source>
+   <doc:scenario>
+     it('should enter invalid HTML', function() {
+       expect(element('form[name=editorForm]').prop('className')).toMatch(/ng-valid/);
+       input('htmlContent').enter('<');
+       expect(element('form[name=editorForm]').prop('className')).toMatch(/ng-invalid/);
+     });
+   </doc:scenario>
+ </doc:example>
+ */
+
+/**
+ * @ngdoc object
+ * @name angular.module.ng.$formFactory.Form
+ * @description
+ * The `Form` is a controller which keeps track of the validity of the widgets contained within it.
+ */
+
+function $FormFactoryProvider() {
+  var $parse;
+  this.$get = ['$rootScope', '$parse', '$controller',
+      function($rootScope, $parse_, $controller) {
+    $parse = $parse_;
+    /**
+     * @ngdoc proprety
+     * @name rootForm
+     * @propertyOf angular.module.ng.$formFactory
+     * @description
+     * Static property on `$formFactory`
+     *
+     * Each application ({@link guide/dev_guide.scopes.internals root scope}) gets a root form which
+     * is the top-level parent of all forms.
+     */
+    formFactory.rootForm = formFactory($rootScope);
+
+
+    /**
+     * @ngdoc method
+     * @name forElement
+     * @methodOf angular.module.ng.$formFactory
+     * @description
+     * Static method on `$formFactory` service.
+     *
+     * Retrieve the closest form for a given element or defaults to the `root` form. Used by the
+     * {@link angular.module.ng.$compileProvider.directive.form form} element.
+     * @param {Element} element The element where the search for form should initiate.
+     */
+    formFactory.forElement = function(element) {
+      return element.inheritedData('$form') || formFactory.rootForm;
+    };
+    return formFactory;
+
+    function formFactory(parent) {
+      var scope = (parent || formFactory.rootForm).$new();
+      $controller(FormController, {$scope: scope});
+      return scope;
+    }
+
+  }];
+
+  function propertiesUpdate(widget) {
+    widget.$valid = !(widget.$invalid =
+      !(widget.$readonly || widget.$disabled || equals(widget.$error, {})));
+  }
+
+  /**
+   * @ngdoc property
+   * @name $error
+   * @propertyOf angular.module.ng.$formFactory.Form
+   * @description
+   * Property of the form and widget instance.
+   *
+   * Summary of all of the errors on the page. If a widget emits `$invalid` with `REQUIRED` key,
+   * then the `$error` object will have a `REQUIRED` key with an array of widgets which have
+   * emitted this key. `form.$error.REQUIRED == [ widget ]`.
+   */
+
+  /**
+   * @ngdoc property
+   * @name $invalid
+   * @propertyOf angular.module.ng.$formFactory.Form
+   * @description
+   * Property of the form and widget instance.
+   *
+   * True if any of the widgets of the form are invalid.
+   */
+
+  /**
+   * @ngdoc property
+   * @name $valid
+   * @propertyOf angular.module.ng.$formFactory.Form
+   * @description
+   * Property of the form and widget instance.
+   *
+   * True if all of the widgets of the form are valid.
+   */
+
+  /**
+   * @ngdoc event
+   * @name angular.module.ng.$formFactory.Form#$valid
+   * @eventOf angular.module.ng.$formFactory.Form
+   * @eventType listen on form
+   * @description
+   * Upon receiving the `$valid` event from the widget update the `$error`, `$valid` and `$invalid`
+   * properties of both the widget as well as the from.
+   *
+   * @param {string} validationKey The validation key to be used when updating the `$error` object.
+   *    The validation key is what will allow the template to bind to a specific validation error
+   *    such as `<div ng:show="form.$error.KEY">error for key</div>`.
+   */
+
+  /**
+   * @ngdoc event
+   * @name angular.module.ng.$formFactory.Form#$invalid
+   * @eventOf angular.module.ng.$formFactory.Form
+   * @eventType listen on form
+   * @description
+   * Upon receiving the `$invalid` event from the widget update the `$error`, `$valid` and `$invalid`
+   * properties of both the widget as well as the from.
+   *
+   * @param {string} validationKey The validation key to be used when updating the `$error` object.
+   *    The validation key is what will allow the template to bind to a specific validation error
+   *    such as `<div ng:show="form.$error.KEY">error for key</div>`.
+   */
+
+  /**
+   * @ngdoc event
+   * @name angular.module.ng.$formFactory.Form#$validate
+   * @eventOf angular.module.ng.$formFactory.Form
+   * @eventType emit on widget
+   * @description
+   * Emit the `$validate` event on the widget, giving a widget a chance to emit a
+   * `$valid` / `$invalid` event base on its state. The `$validate` event is triggered when the
+   * model or the view changes.
+   */
+
+  /**
+   * @ngdoc event
+   * @name angular.module.ng.$formFactory.Form#$viewChange
+   * @eventOf angular.module.ng.$formFactory.Form
+   * @eventType listen on widget
+   * @description
+   * A widget is responsible for emitting this event whenever the view changes do to user interaction.
+   * The event takes a `$viewValue` parameter, which is the new value of the view. This
+   * event triggers a call to `$parseView()` as well as `$validate` event on widget.
+   *
+   * @param {*} viewValue The new value for the view which will be assigned to `widget.$viewValue`.
+   */
+
+  FormController.$inject = ['$scope', '$injector'];
+  function FormController($scope, $injector) {
+    this.$injector = $injector;
+
+    var form = this.form = $scope,
+        $error = form.$error = {};
+
+    form.$on('$destroy', function(event){
+      var widget = event.targetScope;
+      if (widget.$widgetId) {
+        delete form[widget.$widgetId];
+      }
+      forEach($error, removeWidget, widget);
+    });
+
+    form.$on('$valid', function(event, error){
+      var widget = event.targetScope;
+      delete widget.$error[error];
+      propertiesUpdate(widget);
+      removeWidget($error[error], error, widget);
+    });
+
+    form.$on('$invalid', function(event, error){
+      var widget = event.targetScope;
+      addWidget(error, widget);
+      widget.$error[error] = true;
+      propertiesUpdate(widget);
+    });
+
+    propertiesUpdate(form);
+    form.$createWidget = bind(this, this.$createWidget);
+
+    function removeWidget(queue, errorKey, widget) {
+      if (queue) {
+        widget = widget || this; // so that we can be used in forEach;
+        for (var i = 0, length = queue.length; i < length; i++) {
+          if (queue[i] === widget) {
+            queue.splice(i, 1);
+            if (!queue.length) {
+              delete $error[errorKey];
+            }
+          }
+        }
+        propertiesUpdate(form);
+      }
+    }
+
+    function addWidget(errorKey, widget) {
+      var queue = $error[errorKey];
+      if (queue) {
+        for (var i = 0, length = queue.length; i < length; i++) {
+          if (queue[i] === widget) {
+            return;
+          }
+        }
+      } else {
+        $error[errorKey] = queue = [];
+      }
+      queue.push(widget);
+      propertiesUpdate(form);
+    }
+  }
+
+
+  /**
+   * @ngdoc method
+   * @name $createWidget
+   * @methodOf angular.module.ng.$formFactory.Form
+   * @description
+   *
+   * Use form's `$createWidget` instance method to create new widgets. The widgets can be created
+   * using an alias which makes the accessible from the form and available for data-binding,
+   * useful for displaying validation error messages.
+   *
+   * The creation of a widget sets up:
+   *
+   *   - `$watch` of `expression` on `model` scope. This code path syncs the model to the view.
+   *      The `$watch` listener will:
+   *
+   *     - assign the new model value of `expression` to `widget.$modelValue`.
+   *     - call `widget.$parseModel` method if present. The `$parseModel` is responsible for copying
+   *       the `widget.$modelValue` to `widget.$viewValue` and optionally converting the data.
+   *       (For example to convert a number into string)
+   *     - emits `$validate` event on widget giving a widget a chance to emit `$valid` / `$invalid`
+   *       event.
+   *     - call `widget.$render()` method on widget. The `$render` method is responsible for
+   *       reading the `widget.$viewValue` and updating the DOM.
+   *
+   *   - Listen on `$viewChange` event from the `widget`. This code path syncs the view to the model.
+   *     The `$viewChange` listener will:
+   *
+   *     - assign the value to `widget.$viewValue`.
+   *     - call `widget.$parseView` method if present. The `$parseView` is responsible for copying
+   *       the `widget.$viewValue` to `widget.$modelValue` and optionally converting the data.
+   *       (For example to convert a string into number)
+   *     - emits `$validate` event on widget giving a widget a chance to emit `$valid` / `$invalid`
+   *       event.
+   *     - Assign the  `widget.$modelValue` to the `expression` on the `model` scope.
+   *
+   *   - Creates these set of properties on the `widget` which are updated as a response to the
+   *     `$valid` / `$invalid` events:
+   *
+   *     - `$error` -  object - validation errors will be published as keys on this object.
+   *       Data-binding to this property is useful for displaying the validation errors.
+   *     - `$valid` - boolean - true if there are no validation errors
+   *     - `$invalid` - boolean - opposite of `$valid`.
+   * @param {Object} params Named parameters:
+   *
+   *   - `scope` - `{Scope}` -  The scope to which the model for this widget is attached.
+   *   - `model` - `{string}` - The name of the model property on model scope.
+   *   - `controller` - {WidgetController} - The controller constructor function.
+   *      The controller constructor should create these instance methods.
+   *     - `$parseView()`: optional method responsible for copying `$viewVale` to `$modelValue`.
+   *         The method may fire `$valid`/`$invalid` events.
+   *     - `$parseModel()`: optional method responsible for copying `$modelVale` to `$viewValue`.
+   *         The method may fire `$valid`/`$invalid` events.
+   *     - `$render()`: required method which needs to update the DOM of the widget to match the
+   *         `$viewValue`.
+   *
+   *   - `controllerArgs` - `{Array}` (Optional) -  Any extra arguments will be curried to the
+   *     WidgetController constructor.
+   *   - `onChange` - `{(string|function())}` (Optional) - Expression to execute when user changes the
+   *     value.
+   *   - `alias` - `{string}` (Optional) - The name of the form property under which the widget
+   *     instance should be published. The name should be unique for each form.
+   * @returns {Widget} Instance of a widget scope.
+   */
+  FormController.prototype.$createWidget = function(params) {
+    var form = this.form,
+        modelScope = params.scope,
+        onChange = params.onChange,
+        alias = params.alias,
+        scopeGet = $parse(params.model),
+        scopeSet = scopeGet.assign,
+        widget = form.$new();
+
+    this.$injector.instantiate(params.controller, extend({$scope: widget}, params.controllerArgs));
+
+    if (!scopeSet) {
+      throw Error("Expression '" + params.model + "' is not assignable!");
+    }
+
+    widget.$error = {};
+    // Set the state to something we know will change to get the process going.
+    widget.$modelValue = Number.NaN;
+    // watch for scope changes and update the view appropriately
+    modelScope.$watch(scopeGet, function(value) {
+      if (!equals(widget.$modelValue, value)) {
+        widget.$modelValue = value;
+        widget.$parseModel ? widget.$parseModel() : (widget.$viewValue = value);
+        widget.$emit('$validate');
+        widget.$render && widget.$render();
+      }
+    });
+
+    widget.$on('$viewChange', function(event, viewValue){
+      if (!equals(widget.$viewValue, viewValue)) {
+        widget.$viewValue = viewValue;
+        widget.$parseView ? widget.$parseView() : (widget.$modelValue = widget.$viewValue);
+        scopeSet(modelScope, widget.$modelValue);
+        if (onChange) modelScope.$eval(onChange);
+        widget.$emit('$validate');
+      }
+    });
+
+    propertiesUpdate(widget);
+
+    // assign the widgetModel to the form
+    if (alias && !form.hasOwnProperty(alias)) {
+      form[alias] = widget;
+      widget.$widgetId = alias;
+    } else {
+      alias = null;
+    }
+
+    return widget;
+  };
+}
+
+/**
  * @ngdoc function
  * @name angular.module.ng.$interpolateProvider
  * @function
@@ -6015,11 +6420,12 @@ function $InterpolateProvider() {
      * @param {boolean=} mustHaveExpression if set to true then the interpolation string must have
      *    embedded expression in order to return an interpolation function. Strings with no
      *    embedded expression will return null for the interpolation function.
-     * @returns {function(context)} an interpolation function which is used to compute the interpolated
+     * @returns {function(context, locals)} an interpolation function which is used to compute the interpolated
      *    string. The function has these parameters:
      *
      *    * `context`: an object against which any expressions embedded in the strings are evaluated
      *      against.
+     *    * `locals`: an local variable objects. See $parse service.
      *
      */
     return function(text, mustHaveExpression) {
@@ -6056,10 +6462,10 @@ function $InterpolateProvider() {
 
       if (!mustHaveExpression  || hasInterpolation) {
         concat.length = length;
-        fn = function(context) {
+        fn = function(context, locals) {
           for(var i = 0, ii = length, part; i<ii; i++) {
             if (typeof (part = parts[i]) == 'function') {
-              part = part(context);
+              part = part(context, locals);
               if (part == null || part == undefined) {
                 part = '';
               } else if (typeof part != 'string') {
@@ -6948,6 +7354,177 @@ function $ResourceProvider() {
     var resource = new ResourceFactory($http);
     return bind(resource, resource.route);
   }];
+}
+$Resource2Provider.$inject = ['$provide']
+function $Resource2Provider($provide) {
+  var strategies = {};
+  this.strategy = function(name, strategy) {
+    strategies[name] = strategy;
+  };
+
+  this.strategy('rest', ['$Type', '$method', function(Type, method) {
+    Type.retrieve = method(['id'], {url: '{{url}}{{id}}'});
+    Type.list = method(['params'], {});
+    Type.create = method(['pData'], { method: 'POST', externalize:'pData' });
+    Type.replace = method(['pData'], { method: 'PUT', url:'{{url}}{{pData.id}}', externalize:'pData' });
+    Type.remove = method(['id'], { method: 'DELETE', url:'{{url}}{{id}}', internalize:noop });
+
+    var prototype = Type.prototype;
+    prototype.create = method(['patch'], { method: 'POST', externalize: true, internalize: true});
+    prototype.replace = method(['patch'], { method: 'PUT', url:'{{url}}{{self.id}}',
+      externalize:true, internalize: true });
+    prototype.remove = method([], { method: 'DELETE', url:'{{url}}{{self.id}}', internalize:noop });
+  }]);
+
+
+  this.$get = ['$q', '$interpolate', '$parse', '$http', '$injector',
+          function($q, $interpolate, $parse, $http, $injector) {
+    var defaultOptions = {
+      request: $http,
+      method: 'GET',
+      url: '/',
+      response: 'data'
+    };
+    return function(sharedOptions) {
+      var resourceOptions = {returnType: Resource};
+      forEach(strategies, function(strategy, strategyName) {
+        defineMethod[strategyName] = function() {
+          $injector.invoke(strategy, null, {$Type: Resource, $method: defineMethod});
+          return Resource;
+        };
+      });
+      return defineMethod;
+      ////////////////////////////
+      function Resource(data) { extend(this, data); }
+      function defineMethod(methodParameters, methodOptions) {
+        return function() {
+          var self = this,
+              locals = {self: self, copy: copy, extend: extend},
+              methodArgs = arguments,
+              extract = optionExtractor($q, $interpolate,
+                  [defaultOptions, resourceOptions, sharedOptions, methodOptions]);
+
+
+          forEach(methodParameters, function(exp, index) {
+            $parse(exp).assign(locals, methodArgs[index]);
+          });
+
+          return $q.all([ extract('method', locals),
+                          extract('url', locals),
+                          extract('params', locals),
+                          extract('headers', locals),
+                          extract('cache')]).
+              then(function(values) {
+                var data = execute(extract('externalize'), self, function(){
+                  return extend(copy(self), locals.patch);
+                });
+                return extract('request')({ method:  values[0],
+                                            url:     values[1],
+                                            params:  values[2],
+                                            data:    data,
+                                            headers: values[3],
+                                            cache:   values[4] }).
+                    then(function(response) {
+                      var data = execute(extract('response'), response),
+                          internalize = extract('internalize'),
+                          Type = extract('returnType'),
+                          value;
+
+                      if (isArray(data)) {
+                        value = [];
+                        forEach(data, function(item, i) {
+                          value.push(processResponse(self[i], item));
+                        });
+                      } else {
+                        value = processResponse(self, data);
+                      }
+                      return value;
+
+                      ////////////////////////////////////
+
+                      function processResponse(self, response) {
+                        if (internalize === true) {
+                          return extend(self, response);
+                        } else if (isFunction(internalize)) {
+                          return internalize(self, response);
+                        } else if (isString(internalize)) {
+                          locals.response = response;
+                          locals.self = self;
+                          return $parse(internalize)({}, locals);
+                        } else if (isFunction(Type)) {
+                          return new Type(response);
+                        }
+                      }
+                    });
+
+                ////////////////////////////////////
+
+                function execute(exp, arg, trueFn) {
+                  if (trueFn && exp === true) {
+                    return trueFn();
+                  } else if (isFunction(exp)) {
+                    return exp(arg);
+                  } else if (isString(exp)) {
+                    return $parse(exp)(arg, locals);
+                  }
+                }
+          });
+        }
+      }
+    };
+  }];
+}
+
+
+function optionExtractor($q, $interpolate, options) {
+  return function(key, locals) {
+    var context = {},
+        chain = undefined,
+        myOptions = options;
+
+    function resolve(value) {
+      // If it is string convert it into interpolation function
+      if (isString(value)) value = $interpolate(value);
+
+      // if it is function execute it.
+      if (isFunction(value)) value = value(context, locals);
+
+      return value;
+    }
+
+    if (locals) {
+      chain = $q.when(undefined);
+      myOptions = concat(options, [locals]);
+    }
+    forEach(myOptions, function(option) {
+      if (option.hasOwnProperty(key)) {
+        var value = option[key];
+        if (locals) {
+          chain = chain.then(function(previous) {
+            // value could be future, so resolve it.
+            return $q.when(resolve(value)).then(function(value) {
+              // if object then shalow resolve
+              if (isObject(value)) {
+                var promisses = [],
+                    dst = isObject(previous) ? previous : value;
+                forEach(value, function(value, key) {
+                  promisses.push($q.when(resolve(value)).then(function(value){
+                    dst[key] = value;
+                  }));
+                });
+                // process all of the promisses and merge them.
+                return $q.all(promisses).then(valueFn(context[key] = dst));
+              }
+              return context[key] = value;
+            });
+          });
+        } else {
+          chain = value;
+        }
+      }
+    });
+    return chain;
+  }
 }
 
 var OPERATORS = {
@@ -8069,16 +8646,20 @@ function qFactory(nextTick, exceptionHandler) {
         counter = promises.length,
         results = [];
 
-    forEach(promises, function(promise, index) {
-      promise.then(function(value) {
-        if (index in results) return;
-        results[index] = value;
-        if (!(--counter)) deferred.resolve(results);
-      }, function(reason) {
-        if (index in results) return;
-        deferred.reject(reason);
+    if (counter) {
+      forEach(promises, function(promise, index) {
+        ref(promise).then(function(value) {
+          if (index in results) return;
+          results[index] = value;
+          if (!(--counter)) deferred.resolve(results);
+        }, function(reason) {
+          if (index in results) return;
+          deferred.reject(reason);
+        });
       });
-    });
+    } else {
+      deferred.resolve(results);
+    }
 
     return deferred.promise;
   }
@@ -8154,80 +8735,8 @@ function qFactory(nextTick, exceptionHandler) {
     </doc:example>
  */
 function $RouteProvider(){
-  var routes = {};
-
-  /**
-   * @ngdoc method
-   * @name angular.module.ng.$route#when
-   * @methodOf angular.module.ng.$route
-   *
-   * @param {string} path Route path (matched against `$location.hash`)
-   * @param {Object} route Mapping information to be assigned to `$route.current` on route
-   *    match.
-   *
-   *    Object properties:
-   *
-   *    - `controller` â€“ `{function()=}` â€“ Controller fn that should be associated with newly
-   *      created scope.
-   *    - `template` â€“ `{string=}` â€“ path to an html template that should be used by
-   *      {@link angular.module.ng.$compileProvider.directive.ng:view ng:view} or
-   *      {@link angular.module.ng.$compileProvider.directive.ng:include ng:include} widgets.
-   *    - `redirectTo` â€“ {(string|function())=} â€“ value to update
-   *      {@link angular.module.ng.$location $location} path with and trigger route redirection.
-   *
-   *      If `redirectTo` is a function, it will be called with the following parameters:
-   *
-   *      - `{Object.<string>}` - route parameters extracted from the current
-   *        `$location.path()` by applying the current route template.
-   *      - `{string}` - current `$location.path()`
-   *      - `{Object}` - current `$location.search()`
-   *
-   *      The custom `redirectTo` function is expected to return a string which will be used
-   *      to update `$location.path()` and `$location.search()`.
-   *
-   *    - `[reloadOnSearch=true]` - {boolean=} - reload route when only $location.search()
-   *    changes.
-   *
-   *      If the option is set to false and url in the browser changes, then
-   *      $routeUpdate event is emited on the current route scope. You can use this event to
-   *      react to {@link angular.module.ng.$routeParams} changes:
-   *
-   *            function MyCtrl($route, $routeParams) {
-   *              this.$on('$routeUpdate', function() {
-   *                // do stuff with $routeParams
-   *              });
-   *            }
-   *
-   * @returns {Object} route object
-   *
-   * @description
-   * Adds a new route definition to the `$route` service.
-   */
-  this.when = function(path, route) {
-    var routeDef = routes[path];
-    if (!routeDef) routeDef = routes[path] = {reloadOnSearch: true};
-    if (route) extend(routeDef, route); // TODO(im): what the heck? merge two route definitions?
-    return routeDef;
-  };
-
-  /**
-   * @ngdoc method
-   * @name angular.module.ng.$route#otherwise
-   * @methodOf angular.module.ng.$route
-   *
-   * @description
-   * Sets route definition that will be used on route change when no other route definition
-   * is matched.
-   *
-   * @param {Object} params Mapping information to be assigned to `$route.current`.
-   */
-  this.otherwise = function(params) {
-    this.when(null, params);
-  };
-
-
-  this.$get = ['$rootScope', '$location', '$routeParams',
-      function( $rootScope,  $location,  $routeParams) {
+  this.$get = ['$rootScope', '$location', '$routeParams', '$controller',
+      function( $rootScope,  $location,  $routeParams, $controller) {
     /**
      * @ngdoc event
      * @name angular.module.ng.$route#$beforeRouteChange
@@ -8268,18 +8777,106 @@ function $RouteProvider(){
      * @ngdoc event
      * @name angular.module.ng.$route#$routeUpdate
      * @eventOf angular.module.ng.$route
-     * @eventType broadcast on root scope
+     * @eventType emit on the current route scope
      * @description
      *
      * The `reloadOnSearch` property has been set to false, and we are reusing the same
      * instance of the Controller.
      */
 
-    var matcher = switchRouteMatcher,
+    var routes = {},
+        matcher = switchRouteMatcher,
+        parentScope = $rootScope,
         dirty = 0,
         forceReload = false,
         $route = {
           routes: routes,
+
+          /**
+           * @ngdoc method
+           * @name angular.module.ng.$route#parent
+           * @methodOf angular.module.ng.$route
+           *
+           * @param {Scope} [scope=rootScope] Scope to be used as parent for newly created
+           *    `$route.current.scope` scopes.
+           *
+           * @description
+           * Sets a scope to be used as the parent scope for scopes created on route change. If not
+           * set, defaults to the root scope.
+           */
+          parent: function(scope) {
+            if (scope) parentScope = scope;
+          },
+
+          /**
+           * @ngdoc method
+           * @name angular.module.ng.$route#when
+           * @methodOf angular.module.ng.$route
+           *
+           * @param {string} path Route path (matched against `$location.hash`)
+           * @param {Object} route Mapping information to be assigned to `$route.current` on route
+           *    match.
+           *
+           *    Object properties:
+           *
+           *    - `controller` â€“ `{function()=}` â€“ Controller fn that should be associated with newly
+           *      created scope.
+           *    - `template` â€“ `{string=}` â€“ path to an html template that should be used by
+           *      {@link angular.module.ng.$compileProvider.directive.ng:view ng:view} or
+           *      {@link angular.module.ng.$compileProvider.directive.ng:include ng:include} widgets.
+           *    - `redirectTo` â€“ {(string|function())=} â€“ value to update
+           *      {@link angular.module.ng.$location $location} path with and trigger route redirection.
+           *
+           *      If `redirectTo` is a function, it will be called with the following parameters:
+           *
+           *      - `{Object.<string>}` - route parameters extracted from the current
+           *        `$location.path()` by applying the current route template.
+           *      - `{string}` - current `$location.path()`
+           *      - `{Object}` - current `$location.search()`
+           *
+           *      The custom `redirectTo` function is expected to return a string which will be used
+           *      to update `$location.path()` and `$location.search()`.
+           *
+           *    - `[reloadOnSearch=true]` - {boolean=} - reload route when only $location.search()
+           *    changes.
+           *
+           *      If the option is set to false and url in the browser changes, then
+           *      $routeUpdate event is emited on the current route scope. You can use this event to
+           *      react to {@link angular.module.ng.$routeParams} changes:
+           *
+           *            function MyCtrl($route, $routeParams) {
+           *              this.$on('$routeUpdate', function() {
+           *                // do stuff with $routeParams
+           *              });
+           *            }
+           *
+           * @returns {Object} route object
+           *
+           * @description
+           * Adds a new route definition to the `$route` service.
+           */
+          when: function(path, route) {
+            var routeDef = routes[path];
+            if (!routeDef) routeDef = routes[path] = {reloadOnSearch: true};
+            if (route) extend(routeDef, route); // TODO(im): what the heck? merge two route definitions?
+            dirty++;
+            return routeDef;
+          },
+
+          /**
+           * @ngdoc method
+           * @name angular.module.ng.$route#otherwise
+           * @methodOf angular.module.ng.$route
+           *
+           * @description
+           * Sets route definition that will be used on route change when no other route definition
+           * is matched.
+           *
+           * @param {Object} params Mapping information to be assigned to `$route.current`.
+           */
+          otherwise: function(params) {
+            $route.when(null, params);
+          },
 
           /**
            * @ngdoc method
@@ -8328,16 +8925,19 @@ function $RouteProvider(){
 
     function updateRoute() {
       var next = parseRoute(),
-          last = $route.current;
+          last = $route.current,
+          Controller;
 
       if (next && last && next.$route === last.$route
           && equals(next.pathParams, last.pathParams) && !next.reloadOnSearch && !forceReload) {
-        last.params = next.params;
-        copy(last.params, $routeParams);
-        $rootScope.$broadcast('$routeUpdate', last);
-      } else if (next || last) {
+        next.scope = last.scope;
+        $route.current = next;
+        copy(next.params, $routeParams);
+        last.scope && last.scope.$emit('$routeUpdate');
+      } else {
         forceReload = false;
         $rootScope.$broadcast('$beforeRouteChange', next, last);
+        last && last.scope && last.scope.$destroy();
         $route.current = next;
         if (next) {
           if (next.redirectTo) {
@@ -8350,6 +8950,10 @@ function $RouteProvider(){
             }
           } else {
             copy(next.params, $routeParams);
+            next.scope = parentScope.$new();
+            if (next.controller) {
+              $controller(next.controller, {$scope: next.scope});
+            }
           }
         }
         $rootScope.$broadcast('$afterRouteChange', next, last);
@@ -8393,6 +8997,8 @@ function $RouteProvider(){
       });
       return result.join('');
     }
+
+
   }];
 }
 
@@ -8999,7 +9605,6 @@ function $RootScopeProvider(){
        *
        * The event listener function format is: `function(event)`. The `event` object passed into the
        * listener has the following attributes
-       *
        *   - `targetScope` - {Scope}: the scope on which the event was `$emit`-ed or `$broadcast`-ed.
        *   - `currentScope` - {Scope}: the current scope which is handling the event.
        *   - `name` - {string}: Name of the event.
@@ -9588,6 +10193,7 @@ function $WindowProvider(){
   this.$get = valueFn(window);
 }
 
+
 /**
  * Parse headers into key value object
  *
@@ -9690,7 +10296,7 @@ function $HttpProvider() {
 
     // transform outgoing request data
     transformRequest: function(d) {
-      return isObject(d) && !isFile(d) ? toJson(d) : d;
+      return isObject(d) ? toJson(d) : d;
     },
 
     // default headers
@@ -10222,7 +10828,8 @@ function $HttpProvider() {
       var deferred = $q.defer(),
           promise = deferred.promise,
           cache,
-          cachedResp;
+          cachedResp,
+          url = buildUrl(config.url, config.params);
 
       $http.pendingRequests.push(config);
       promise.then(removePendingReq, removePendingReq);
@@ -10233,7 +10840,7 @@ function $HttpProvider() {
       }
 
       if (cache) {
-        cachedResp = cache.get(config.url);
+        cachedResp = cache.get(url);
         if (cachedResp) {
           if (cachedResp.then) {
             // cached request has already been sent, but there is no response yet
@@ -10249,13 +10856,13 @@ function $HttpProvider() {
           }
         } else {
           // put the promise for the non-transformed response into cache as a placeholder
-          cache.put(config.url, promise);
+          cache.put(url, promise);
         }
       }
 
       // if we won't have the response in cache, send the request to the backend
       if (!cachedResp) {
-        $httpBackend(config.method, config.url, reqData, done, reqHeaders, config.timeout);
+        $httpBackend(config.method, url, reqData, done, reqHeaders, config.timeout);
       }
 
       return promise;
@@ -10270,10 +10877,10 @@ function $HttpProvider() {
       function done(status, response, headersString) {
         if (cache) {
           if (isSuccess(status)) {
-            cache.put(config.url, [status, response, parseHeaders(headersString)]);
+            cache.put(url, [status, response, parseHeaders(headersString)]);
           } else {
             // remove promise from the cache
-            cache.remove(config.url);
+            cache.remove(url);
           }
         }
 
@@ -10304,6 +10911,19 @@ function $HttpProvider() {
       }
     }
   }];
+}
+
+function buildUrl(url, params) {
+  if (!params) return url;
+  var parts = [];
+  forEach(params, function(value, key) {
+    if (value == null || value == undefined) return;
+    if (isObject(value)) {
+      value = toJson(value);
+    }
+    parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+  });
+  return url + ((url.indexOf('?') == -1) ? '?' : '&') + parts.join('&');
 }
 var XHR = window.XMLHttpRequest || function() {
   try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); } catch (e1) {}
@@ -10341,7 +10961,6 @@ function createHttpBackend($browser, XHR, $browserDefer, callbacks, body, locati
   // TODO(vojta): fix the signature
   return function(method, url, post, callback, headers, timeout) {
     $browser.$$incOutstandingRequestCount();
-    url = url || $browser.url();
 
     if (lowercase(method) == 'jsonp') {
       var callbackId = '_' + (callbacks.counter++).toString(36);
@@ -11446,24 +12065,6 @@ var ngTranscludeDirective = valueFn({
   }]
 });
 
-
-var styleDirective = valueFn({
-  restrict: 'E',
-  terminal: true
-});
-
-
-var onloadDirective = valueFn({
-  restrict: 'AC',
-  link: function(scope, elm, attr) {
-    var onloadExp = attr.onload || ''; //workaround for jquery bug #7537)
-
-    scope.$on('$contentLoaded', function(event) {
-      scope.$eval(onloadExp);
-    });
-  }
-});
-
 /**
  * @ngdoc directive
  * @name angular.module.ng.$compileProvider.directive.ng:href
@@ -11798,6 +12399,7 @@ var ngIncludeDirective = ['$http', '$templateCache', '$anchorScroll', '$compile'
     compile: function(element, attr) {
       var srcExp = attr.src,
           scopeExp = attr.scope || '',
+          onloadExp = attr.onload || '', //workaround for jquery bug #7537
           autoScrollExp = attr.autoscroll;
       if (!element[0]['ng:compiled']) {
         element[0]['ng:compiled'] = true;
@@ -11835,7 +12437,7 @@ var ngIncludeDirective = ['$http', '$templateCache', '$anchorScroll', '$compile'
                    if (isDefined(autoScrollExp) && (!autoScrollExp || scope.$eval(autoScrollExp))) {
                      $anchorScroll();
                    }
-                   scope.$emit('$contentLoaded');
+                   scope.$eval(onloadExp);
                  }
                }).error(clearContent);
              } else {
@@ -12227,23 +12829,23 @@ var ngNonBindableDirective = valueFn({ terminal: true });
  *
  *
  * @example
-    <doc:example module="ngView">
+    <doc:example>
       <doc:source jsfiddle="false">
          <script>
+           function MyCtrl($route) {
+             $route.when('/overview',
+               { controller: OverviewCtrl,
+                 template: 'partials/guide/dev_guide.overview.html'});
+             $route.when('/bootstrap',
+               { controller: BootstrapCtrl,
+                 template: 'partials/guide/dev_guide.bootstrap.auto_bootstrap.html'});
+           };
+           MyCtrl.$inject = ['$route'];
+
            function BootstrapCtrl() {}
            function OverviewCtrl() {}
-
-           angular.module('ngView', [])
-             .config(function($routeProvider) {
-               $routeProvider.when('/overview',
-                 { controller: OverviewCtrl,
-                   template: 'partials/guide/dev_guide.overview.html'});
-               $routeProvider.when('/bootstrap',
-                 { controller: BootstrapCtrl,
-                   template: 'partials/guide/dev_guide.bootstrap.auto_bootstrap.html'});
-             });
          </script>
-         <div>
+         <div ng:controller="MyCtrl">
            <a href="overview">overview</a> |
            <a href="bootstrap">bootstrap</a> |
            <a href="undefined">undefined</a>
@@ -12267,63 +12869,44 @@ var ngNonBindableDirective = valueFn({ terminal: true });
     </doc:example>
  */
 var ngViewDirective = ['$http', '$templateCache', '$route', '$anchorScroll', '$compile',
-                       '$controller',
-               function($http,   $templateCache,   $route,   $anchorScroll,   $compile,
-                        $controller) {
+               function($http,   $templateCache,   $route,   $anchorScroll,   $compile) {
   return {
-    terminal: true,
-    link: function(scope, element) {
-      var changeCounter = 0,
-          lastScope;
+    compile: function(element, attr) {
+      if (!element[0]['ng:compiled']) {
+        element[0]['ng:compiled'] = true;
 
-      scope.$on('$afterRouteChange', function(event, next, previous) {
-        changeCounter++;
-      });
+        return function(scope, element, attrs) {
+          var changeCounter = 0;
 
-      scope.$watch(function() {return changeCounter;}, function(newChangeCounter) {
-        var template = $route.current && $route.current.template;
+          scope.$on('$afterRouteChange', function() {
+            changeCounter++;
+          });
 
-        function destroyLastScope() {
-          if (lastScope) {
-            lastScope.$destroy();
-            lastScope = null;
-          }
-        }
+          scope.$watch(function() {return changeCounter;}, function(newChangeCounter) {
+            var template = $route.current && $route.current.template;
 
-        function clearContent() {
-          // ignore callback if another route change occured since
-          if (newChangeCounter == changeCounter) {
-            element.html('');
-          }
-          destroyLastScope();
-        }
-
-        if (template) {
-          $http.get(template, {cache: $templateCache}).success(function(response) {
-            // ignore callback if another route change occured since
-            if (newChangeCounter == changeCounter) {
-              element.html(response);
-              destroyLastScope();
-
-              var link = $compile(element.contents()),
-                  current = $route.current;
-
-              lastScope = current.scope = scope.$new();
-              if (current.controller) {
-                $controller(current.controller, {$scope: lastScope});
+            function clearContent() {
+              // ignore callback if another route change occured since
+              if (newChangeCounter == changeCounter) {
+                element.html('');
               }
-
-              link(lastScope);
-              lastScope.$emit('$contentLoaded');
-
-              // $anchorScroll might listen on event...
-              $anchorScroll();
             }
-          }).error(clearContent);
-        } else {
-          clearContent();
-        }
-      });
+
+            if (template) {
+              $http.get(template, {cache: $templateCache}).success(function(response) {
+                // ignore callback if another route change occured since
+                if (newChangeCounter == changeCounter) {
+                  element.html(response);
+                  $compile(element)($route.current.scope);
+                  $anchorScroll();
+                }
+              }).error(clearContent);
+            } else {
+              clearContent();
+            }
+          });
+        };
+      }
     }
   };
 }];
@@ -12529,35 +13112,8 @@ var ngPluralizeDirective = ['$locale', '$interpolate', function($locale, $interp
 }];
 
 
-/**
- * @ngdoc widget
- * @name angular.module.ng.$compileProvider.directive.script
- *
- * @description
- * Load content of a script tag, with type `text/ng-template`, into `$templateCache`, so that the
- * template can be used by `ng:include`, `ng:view` or directive templates.
- *
- * @example
-  <doc:example>
-    <doc:source>
-      <script type="text/ng-template" id="/tpl.html">
-        Content of the template.
-      </script>
-
-      <a ng:click="currentTpl='/tpl.html'" id="tpl-link">Load inlined template</a>
-      <div id="tpl-content" ng-include src="currentTpl"></div>
-    </doc:source>
-    <doc:scenario>
-      it('should load template defined inside script tag', function() {
-        element('#tpl-link').click();
-        expect(element('#tpl-content').text()).toMatch(/Content of the template/);
-      });
-    </doc:scenario>
-  </doc:example>
- */
 var scriptTemplateLoader = ['$templateCache', function($templateCache) {
   return {
-    terminal: true,
     compile: function(element, attr) {
       if (attr.type == 'text/ng-template') {
         var templateUrl = attr.id;
@@ -12568,130 +13124,16 @@ var scriptTemplateLoader = ['$templateCache', function($templateCache) {
 }];
 
 /**
- * @ngdoc object
- * @name angular.module.ng.$compileProvider.directive.form.FormController
- *
- * @property {boolean} pristine True if user has not interacted with the form yet.
- * @property {boolean} dirty True if user has already interacted with the form.
- * @property {boolean} valid True if all of the containg widgets are valid.
- * @property {boolean} invalid True if at least one containing widget is invalid.
- *
- * @property {Object} error Is an object hash, containing references to all invalid widgets, where
- *
- *  - keys are error ids (such as `REQUIRED`, `URL` or `EMAIL`),
- *  - values are arrays of widgets that are invalid with given error.
- *
- * @description
- * `FormController` keeps track of all its widgets as well as state of them form, such as being valid/invalid or dirty/pristine.
- * 
- * Each {@link angular.module.ng.$compileProvider.directive.form form} directive creates an instance
- * of `FormController`.
- *
- */
-FormController.$inject = ['$scope', 'name'];
-function FormController($scope, name) {
-  var form = this,
-      errors = form.error = {};
-
-  // publish the form into scope
-  name(this);
-
-  $scope.$on('$destroy', function(event, widget) {
-    if (!widget) return;
-
-    if (widget.widgetId) {
-      delete form[widget.widgetId];
-    }
-    forEach(errors, removeWidget, widget);
-  });
-
-  $scope.$on('$valid', function(event, error, widget) {
-    removeWidget(errors[error], error, widget);
-
-    if (equals(errors, {})) {
-      form.valid = true;
-      form.invalid = false;
-    }
-  });
-
-  $scope.$on('$invalid', function(event, error, widget) {
-    addWidget(error, widget);
-
-    form.valid = false;
-    form.invalid = true;
-  });
-
-  $scope.$on('$viewTouch', function() {
-    form.dirty = true;
-    form.pristine = false;
-  });
-
-  // init state
-  form.dirty = false;
-  form.pristine = true;
-  form.valid = true;
-  form.invalid = false;
-
-  function removeWidget(queue, errorKey, widget) {
-    if (queue) {
-      widget = widget || this; // so that we can be used in forEach;
-      for (var i = 0, length = queue.length; i < length; i++) {
-        if (queue[i] === widget) {
-          queue.splice(i, 1);
-          if (!queue.length) {
-            delete errors[errorKey];
-          }
-        }
-      }
-    }
-  }
-
-  function addWidget(errorKey, widget) {
-    var queue = errors[errorKey];
-    if (queue) {
-      for (var i = 0, length = queue.length; i < length; i++) {
-        if (queue[i] === widget) {
-          return;
-        }
-      }
-    } else {
-      errors[errorKey] = queue = [];
-    }
-    queue.push(widget);
-  }
-}
-
-/**
- * @ngdoc function
- * @name angular.module.ng.$compileProvider.directive.form.FormController#registerWidget
- * @methodOf angular.module.ng.$compileProvider.directive.form.FormController
- * @function
- *
- * @param {Object} widget Widget to register (controller of a widget)
- * @param {string=} alias Name alias of the widget.
- *                        (If specified, widget will be accesible as a form property)
- *
- * @description
- *
- */
-FormController.prototype.registerWidget = function(widget, alias) {
-  if (alias && !this.hasOwnProperty(alias)) {
-    widget.widgetId = alias;
-    this[alias] = widget;
-  }
-};
-
-
-/**
- * @ngdoc widget
+ * @ngdoc directive
  * @name angular.module.ng.$compileProvider.directive.form
  *
  * @scope
  * @description
- * Directive that instantiates
- * {@link angular.module.ng.$compileProvider.directive.form.FormController FormController}.
+ * Angular widget that creates a form scope using the
+ * {@link angular.module.ng.$formFactory $formFactory} API. The resulting form scope instance is
+ * attached to the DOM element using the jQuery `.data()` method under the `$form` key.
+ * See {@link guide/dev_guide.forms forms} on detailed discussion of forms and widgets.
  *
- * If `name` attribute is specified, the controller is published to the scope as well.
  *
  * # Alias: `ng:form`
  *
@@ -12701,16 +13143,9 @@ FormController.prototype.registerWidget = function(widget, alias) {
  * element nesting.
  *
  *
- * # CSS classes
- *  - `ng-valid` Is set if the form is valid.
- *  - `ng-invalid` Is set if the form is invalid.
- *  - `ng-pristine` Is set if the form is pristine.
- *  - `ng-dirty` Is set if the form is dirty.
- *
- *
  * # Submitting a form and preventing default action
  *
- * Since the role of forms in client-side Angular applications is different than in classical
+ * Since the role of forms in client-side Angular applications is different than in old-school
  * roundtrip apps, it is desirable for the browser not to translate the form submission into a full
  * page reload that sends the data to the server. Instead some javascript logic should be triggered
  * to handle the form submission in application specific way.
@@ -12735,8 +13170,7 @@ FormController.prototype.registerWidget = function(widget, alias) {
  * hitting enter in any of the input fields will trigger the click handler on the *first* button or
  * input[type=submit] (`ng:click`) *and* a submit handler on the enclosing form (`ng:submit`)
  *
- * @param {string=} name Name of the form. If specified, the form controller will be published into
- *                       related scope, under this name.
+ * @param {string=} name Name of the form.
  *
  * @example
     <doc:example>
@@ -12746,54 +13180,55 @@ FormController.prototype.registerWidget = function(widget, alias) {
            $scope.text = 'guest';
          }
        </script>
-       <form name="myForm" ng:controller="Ctrl">
-         text: <input type="text" name="input" ng:model="text" required>
-         <span class="error" ng:show="myForm.input.error.REQUIRED">Required!</span>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           text: <input type="text" name="input" ng:model="text" required>
+           <span class="error" ng:show="myForm.text.$error.REQUIRED">Required!</span>
+         </form>
          <tt>text = {{text}}</tt><br/>
-         <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-         <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-         <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-         <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-        </form>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+       </div>
       </doc:source>
       <doc:scenario>
         it('should initialize to model', function() {
          expect(binding('text')).toEqual('guest');
-         expect(binding('myForm.input.valid')).toEqual('true');
+         expect(binding('myForm.input.$valid')).toEqual('true');
         });
 
         it('should be invalid if empty', function() {
          input('text').enter('');
          expect(binding('text')).toEqual('');
-         expect(binding('myForm.input.valid')).toEqual('false');
+         expect(binding('myForm.input.$valid')).toEqual('false');
         });
       </doc:scenario>
     </doc:example>
  */
-var ngFormDirective = [function() {
+var ngFormDirective = ['$formFactory', function($formFactory) {
   return {
-    name: 'form',
     restrict: 'E',
-    scope: true,
-    inject: {
-      name: 'accessor'
-    },
-    controller: FormController,
     compile: function() {
       return {
-        pre: function(scope, formElement, attr, controller) {
-          formElement.data('$form', controller);
-          formElement.bind('submit', function(event) {
+        pre: function(scope, formElement, attr) {
+          var name = attr.name,
+            parentForm = $formFactory.forElement(formElement),
+            form = $formFactory(parentForm);
+          formElement.data('$form', form);
+          formElement.bind('submit', function(event){
             if (!attr.action) event.preventDefault();
           });
-
-          forEach(['valid', 'invalid', 'dirty', 'pristine'], function(name) {
-            scope.$watch(function() {
-              return controller[name];
-            }, function(value) {
+          if (name) {
+            scope[name] = form;
+          }
+          watch('valid');
+          watch('invalid');
+          function watch(name) {
+            form.$watch('$' + name, function(value) {
               formElement[value ? 'addClass' : 'removeClass']('ng-' + name);
             });
-          });
+          }
         }
       };
     }
@@ -12803,609 +13238,15 @@ var ngFormDirective = [function() {
 var URL_REGEXP = /^(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?$/;
 var EMAIL_REGEXP = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/;
 var NUMBER_REGEXP = /^\s*(\-|\+)?(\d+|(\d*(\.\d*)))\s*$/;
-
-var inputType = {
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.text
-   *
-   * @description
-   * Standard HTML text input with angular data binding.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
-   * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
-   *    minlength.
-   * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
-   *    maxlength.
-   * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
-   *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
-   *    patterns defined as scope expressions.
-   * @param {string=} ng:change Angular expression to be executed when input changes due to user
-   *    interaction with the input element.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.text = 'guest';
-             $scope.word = /^\w*$/;
-           }
-         </script>
-         <form name="myForm" ng:controller="Ctrl">
-           Single word: <input type="text" name="input" ng:model="text"
-                               ng:pattern="word" required>
-           <span class="error" ng:show="myForm.input.error.REQUIRED">
-             Required!</span>
-           <span class="error" ng:show="myForm.input.error.PATTERN">
-             Single word only!</span>
-
-           <tt>text = {{text}}</tt><br/>
-           <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-           <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-           <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-           <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-          </form>
-        </doc:source>
-        <doc:scenario>
-          it('should initialize to model', function() {
-            expect(binding('text')).toEqual('guest');
-            expect(binding('myForm.input.valid')).toEqual('true');
-          });
-
-          it('should be invalid if empty', function() {
-            input('text').enter('');
-            expect(binding('text')).toEqual('');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-
-          it('should be invalid if multi word', function() {
-            input('text').enter('hello world');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'text': textInputType,
-
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.number
-   *
-   * @description
-   * Text input with number validation and transformation. Sets the `NUMBER` validation
-   * error if not a valid number.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} min Sets the `MIN` validation error key if the value entered is less then `min`.
-   * @param {string=} max Sets the `MAX` validation error key if the value entered is greater then `min`.
-   * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
-   * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
-   *    minlength.
-   * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
-   *    maxlength.
-   * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
-   *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
-   *    patterns defined as scope expressions.
-   * @param {string=} ng:change Angular expression to be executed when input changes due to user
-   *    interaction with the input element.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.value = 12;
-           }
-         </script>
-         <form name="myForm" ng:controller="Ctrl">
-           Number: <input type="number" name="input" ng:model="value"
-                          min="0" max="99" required>
-           <span class="error" ng:show="myForm.list.error.REQUIRED">
-             Required!</span>
-           <span class="error" ng:show="myForm.list.error.NUMBER">
-             Not valid number!</span>
-           <tt>value = {{value}}</tt><br/>
-           <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-           <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-           <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-           <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-          </form>
-        </doc:source>
-        <doc:scenario>
-          it('should initialize to model', function() {
-           expect(binding('value')).toEqual('12');
-           expect(binding('myForm.input.valid')).toEqual('true');
-          });
-
-          it('should be invalid if empty', function() {
-           input('value').enter('');
-           expect(binding('value')).toEqual('');
-           expect(binding('myForm.input.valid')).toEqual('false');
-          });
-
-          it('should be invalid if over max', function() {
-           input('value').enter('123');
-           expect(binding('value')).toEqual('12');
-           expect(binding('myForm.input.valid')).toEqual('false');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'number': numberInputType,
-
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.url
-   *
-   * @description
-   * Text input with URL validation. Sets the `URL` validation error key if the content is not a
-   * valid URL.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
-   * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
-   *    minlength.
-   * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
-   *    maxlength.
-   * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
-   *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
-   *    patterns defined as scope expressions.
-   * @param {string=} ng:change Angular expression to be executed when input changes due to user
-   *    interaction with the input element.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.text = 'http://google.com';
-           }
-         </script>
-         <form name="myForm" ng:controller="Ctrl">
-           URL: <input type="url" name="input" ng:model="text" required>
-           <span class="error" ng:show="myForm.input.error.REQUIRED">
-             Required!</span>
-           <span class="error" ng:show="myForm.input.error.url">
-             Not valid url!</span>
-           <tt>text = {{text}}</tt><br/>
-           <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-           <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-           <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-           <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-           <tt>myForm.error.url = {{!!myForm.error.url}}</tt><br/>
-          </form>
-        </doc:source>
-        <doc:scenario>
-          it('should initialize to model', function() {
-            expect(binding('text')).toEqual('http://google.com');
-            expect(binding('myForm.input.valid')).toEqual('true');
-          });
-
-          it('should be invalid if empty', function() {
-            input('text').enter('');
-            expect(binding('text')).toEqual('');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-
-          it('should be invalid if not url', function() {
-            input('text').enter('xxx');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'url': urlInputType,
-
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.email
-   *
-   * @description
-   * Text input with email validation. Sets the `EMAIL` validation error key if not a valid email
-   * address.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
-   * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
-   *    minlength.
-   * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
-   *    maxlength.
-   * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
-   *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
-   *    patterns defined as scope expressions.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.text = 'me@example.com';
-           }
-         </script>
-           <form name="myForm" ng:controller="Ctrl">
-             Email: <input type="email" name="input" ng:model="text" required>
-             <span class="error" ng:show="myForm.input.error.REQUIRED">
-               Required!</span>
-             <span class="error" ng:show="myForm.input.error.EMAIL">
-               Not valid email!</span>
-             <tt>text = {{text}}</tt><br/>
-             <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-             <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-             <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-             <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-             <tt>myForm.error.EMAIL = {{!!myForm.error.EMAIL}}</tt><br/>
-           </form>
-        </doc:source>
-        <doc:scenario>
-          it('should initialize to model', function() {
-            expect(binding('text')).toEqual('me@example.com');
-            expect(binding('myForm.input.valid')).toEqual('true');
-          });
-
-          it('should be invalid if empty', function() {
-            input('text').enter('');
-            expect(binding('text')).toEqual('');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-
-          it('should be invalid if not email', function() {
-            input('text').enter('xxx');
-            expect(binding('myForm.input.valid')).toEqual('false');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'email': emailInputType,
-
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.radio
-   *
-   * @description
-   * HTML radio button.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string} value The value to which the expression should be set when selected.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} ng:change Angular expression to be executed when input changes due to user
-   *    interaction with the input element.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.color = 'blue';
-           }
-         </script>
-         <form name="myForm" ng:controller="Ctrl">
-           <input type="radio" ng:model="color" value="red">  Red <br/>
-           <input type="radio" ng:model="color" value="green"> Green <br/>
-           <input type="radio" ng:model="color" value="blue"> Blue <br/>
-           <tt>color = {{color}}</tt><br/>
-          </form>
-        </doc:source>
-        <doc:scenario>
-          it('should change state', function() {
-            expect(binding('color')).toEqual('blue');
-
-            input('color').select('red');
-            expect(binding('color')).toEqual('red');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'radio': radioInputType,
-
-
-  /**
-   * @ngdoc inputType
-   * @name angular.module.ng.$compileProvider.directive.input.checkbox
-   *
-   * @description
-   * HTML checkbox.
-   *
-   * @param {string} ng:model Assignable angular expression to data-bind to.
-   * @param {string=} name Property name of the form under which the widgets is published.
-   * @param {string=} ng:true-value The value to which the expression should be set when selected.
-   * @param {string=} ng:false-value The value to which the expression should be set when not selected.
-   * @param {string=} ng:change Angular expression to be executed when input changes due to user
-   *    interaction with the input element.
-   *
-   * @example
-      <doc:example>
-        <doc:source>
-         <script>
-           function Ctrl($scope) {
-             $scope.value1 = true;
-             $scope.value2 = 'YES'
-           }
-         </script>
-         <form name="myForm" ng:controller="Ctrl">
-           Value1: <input type="checkbox" ng:model="value1"> <br/>
-           Value2: <input type="checkbox" ng:model="value2"
-                          ng:true-value="YES" ng:false-value="NO"> <br/>
-           <tt>value1 = {{value1}}</tt><br/>
-           <tt>value2 = {{value2}}</tt><br/>
-          </form>
-        </doc:source>
-        <doc:scenario>
-          it('should change state', function() {
-            expect(binding('value1')).toEqual('true');
-            expect(binding('value2')).toEqual('YES');
-
-            input('value1').check();
-            input('value2').check();
-            expect(binding('value1')).toEqual('false');
-            expect(binding('value2')).toEqual('NO');
-          });
-        </doc:scenario>
-      </doc:example>
-   */
-  'checkbox': checkboxInputType,
-
-  'hidden': noop,
-  'button': noop,
-  'submit': noop,
-  'reset': noop
-};
-
-
-function isEmpty(value) {
-  return isUndefined(value) || value === '' || value === null || value !== value;
-}
-
-
-function textInputType(scope, element, attr, ctrl) {
-  element.bind('blur', function() {
-    var touched = ctrl.touch(),
-        value = trim(element.val());
-
-    if (ctrl.viewValue !== value) {
-      scope.$apply(function() {
-        ctrl.read(value);
-      });
-    } else if (touched) {
-      scope.$apply();
-    }
-  });
-
-  ctrl.render = function() {
-    element.val(isEmpty(ctrl.viewValue) ? '' : ctrl.viewValue);
-  };
-
-  // pattern validator
-  var pattern = attr.ngPattern,
-      patternValidator;
-
-  var emit = function(regexp, value) {
-    if (isEmpty(value) || regexp.test(value)) {
-      ctrl.setValidity('PATTERN', true);
-      return value;
-    } else {
-      ctrl.setValidity('PATTERN', false);
-      return undefined;
-    }
-  };
-
-  if (pattern) {
-    if (pattern.match(/^\/(.*)\/$/)) {
-      pattern = new RegExp(pattern.substr(1, pattern.length - 2));
-      patternValidator = function(value) {
-        return emit(pattern, value)
-      };
-    } else {
-      patternValidator = function(value) {
-        var patternObj = scope.$eval(pattern);
-
-        if (!patternObj || !patternObj.test) {
-          throw new Error('Expected ' + pattern + ' to be a RegExp but was ' + patternObj);
-        }
-        return emit(patternObj, value);
-      };
-    }
-
-    ctrl.formatters.push(patternValidator);
-    ctrl.parsers.push(patternValidator);
-  }
-
-  // min length validator
-  if (attr.ngMinlength) {
-    var minlength = parseInt(attr.ngMinlength, 10);
-    var minLengthValidator = function(value) {
-      if (!isEmpty(value) && value.length < minlength) {
-        ctrl.setValidity('MINLENGTH', false);
-        return undefined;
-      } else {
-        ctrl.setValidity('MINLENGTH', true);
-        return value;
-      }
-    };
-
-    ctrl.parsers.push(minLengthValidator);
-    ctrl.formatters.push(minLengthValidator);
-  }
-
-  // max length validator
-  if (attr.ngMaxlength) {
-    var maxlength = parseInt(attr.ngMaxlength, 10);
-    var maxLengthValidator = function(value) {
-      if (!isEmpty(value) && value.length > maxlength) {
-        ctrl.setValidity('MAXLENGTH', false);
-        return undefined;
-      } else {
-        ctrl.setValidity('MAXLENGTH', true);
-        return value;
-      }
-    };
-
-    ctrl.parsers.push(maxLengthValidator);
-    ctrl.formatters.push(maxLengthValidator);
-  }
-};
-
-function numberInputType(scope, element, attr, ctrl) {
-  textInputType(scope, element, attr, ctrl);
-
-  ctrl.parsers.push(function(value) {
-    var empty = isEmpty(value);
-    if (empty || NUMBER_REGEXP.test(value)) {
-      ctrl.setValidity('NUMBER', true);
-      return value === '' ? null : (empty ? value : parseFloat(value));
-    } else {
-      ctrl.setValidity('NUMBER', false);
-      return undefined;
-    }
-  });
-
-  ctrl.formatters.push(function(value) {
-    return isEmpty(value) ? '' : '' + value;
-  });
-
-  if (attr.min) {
-    var min = parseFloat(attr.min);
-    var minValidator = function(value) {
-      if (!isEmpty(value) && value < min) {
-        ctrl.setValidity('MIN', false);
-        return undefined;
-      } else {
-        ctrl.setValidity('MIN', true);
-        return value;
-      }
-    };
-
-    ctrl.parsers.push(minValidator);
-    ctrl.formatters.push(minValidator);
-  }
-
-  if (attr.max) {
-    var max = parseFloat(attr.max);
-    var maxValidator = function(value) {
-      if (!isEmpty(value) && value > max) {
-        ctrl.setValidity('MAX', false);
-        return undefined;
-      } else {
-        ctrl.setValidity('MAX', true);
-        return value;
-      }
-    };
-
-    ctrl.parsers.push(maxValidator);
-    ctrl.formatters.push(maxValidator);
-  }
-
-  ctrl.formatters.push(function(value) {
-
-    if (isEmpty(value) || isNumber(value)) {
-      ctrl.setValidity('NUMBER', true);
-      return value;
-    } else {
-      ctrl.setValidity('NUMBER', false);
-      return undefined;
-    }
-  });
-}
-
-function urlInputType(scope, element, attr, ctrl) {
-  textInputType(scope, element, attr, ctrl);
-
-  var urlValidator = function(value) {
-    if (isEmpty(value) || URL_REGEXP.test(value)) {
-      ctrl.setValidity('URL', true);
-      return value;
-    } else {
-      ctrl.setValidity('URL', false);
-      return undefined;
-    }
-  };
-
-  ctrl.formatters.push(urlValidator);
-  ctrl.parsers.push(urlValidator);
-}
-
-function emailInputType(scope, element, attr, ctrl) {
-  textInputType(scope, element, attr, ctrl);
-
-  var emailValidator = function(value) {
-    if (isEmpty(value) || EMAIL_REGEXP.test(value)) {
-      ctrl.setValidity('EMAIL', true);
-      return value;
-    } else {
-      ctrl.setValidity('EMAIL', false);
-      return undefined;
-    }
-  };
-
-  ctrl.formatters.push(emailValidator);
-  ctrl.parsers.push(emailValidator);
-}
-
-function radioInputType(scope, element, attr, ctrl) {
-  // correct the name
-  element.attr('name', attr.id + '@' + attr.name);
-
-  element.bind('click', function() {
-    if (element[0].checked) {
-      scope.$apply(function() {
-        ctrl.touch();
-        ctrl.read(attr.value);
-      });
-    };
-  });
-
-  ctrl.render = function() {
-    var value = attr.value;
-    element[0].checked = isDefined(value) && (value == ctrl.viewValue);
-  };
-}
-
-function checkboxInputType(scope, element, attr, ctrl) {
-  var trueValue = attr.ngTrueValue,
-      falseValue = attr.ngFalseValue;
-
-  if (!isString(trueValue)) trueValue = true;
-  if (!isString(falseValue)) falseValue = false;
-
-  element.bind('click', function() {
-    scope.$apply(function() {
-      ctrl.touch();
-      ctrl.read(element[0].checked);
-    });
-  });
-
-  ctrl.render = function() {
-    element[0].checked = ctrl.viewValue;
-  };
-
-  ctrl.formatters.push(function(value) {
-    return value === trueValue;
-  });
-
-  ctrl.parsers.push(function(value) {
-    return value ? trueValue : falseValue;
-  });
-}
+var INTEGER_REGEXP = /^\s*(\-|\+)?\d+\s*$/;
 
 
 /**
- * @ngdoc widget
- * @name angular.module.ng.$compileProvider.directive.textarea
+ * @ngdoc inputType
+ * @name angular.inputType.text
  *
  * @description
- * HTML textarea element widget with angular data-binding. The data-binding and validation
- * properties of this element are exactly the same as those of the
- * {@link angular.module.ng.$compileProvider.directive.input input element}.
+ * Standard HTML text input with angular data binding.
  *
  * @param {string} ng:model Assignable angular expression to data-bind to.
  * @param {string=} name Property name of the form under which the widgets is published.
@@ -13419,7 +13260,579 @@ function checkboxInputType(scope, element, attr, ctrl) {
  *    patterns defined as scope expressions.
  * @param {string=} ng:change Angular expression to be executed when input changes due to user
  *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.text = 'guest';
+           $scope.word = /^\w*$/;
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           Single word: <input type="text" name="input" ng:model="text"
+                               ng:pattern="word" required>
+           <span class="error" ng:show="myForm.input.$error.REQUIRED">
+             Required!</span>
+           <span class="error" ng:show="myForm.input.$error.PATTERN">
+             Single word only!</span>
+         </form>
+         <tt>text = {{text}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+          expect(binding('text')).toEqual('guest');
+          expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+          input('text').enter('');
+          expect(binding('text')).toEqual('');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+
+        it('should be invalid if multi word', function() {
+          input('text').enter('hello world');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
  */
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.email
+ *
+ * @description
+ * Text input with email validation. Sets the `EMAIL` validation error key if not a valid email
+ * address.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
+ *    minlength.
+ * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
+ *    maxlength.
+ * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
+ *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
+ *    patterns defined as scope expressions.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.text = 'me@example.com';
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           Email: <input type="email" name="input" ng:model="text" required>
+           <span class="error" ng:show="myForm.input.$error.REQUIRED">
+             Required!</span>
+           <span class="error" ng:show="myForm.input.$error.EMAIL">
+             Not valid email!</span>
+         </form>
+         <tt>text = {{text}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+         <tt>myForm.$error.EMAIL = {{!!myForm.$error.EMAIL}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+          expect(binding('text')).toEqual('me@example.com');
+          expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+          input('text').enter('');
+          expect(binding('text')).toEqual('');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+
+        it('should be invalid if not email', function() {
+          input('text').enter('xxx');
+          expect(binding('text')).toEqual('xxx');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('email', function(element, widget) {
+  widget.$on('$validate', function(event) {
+    var value = widget.$viewValue;
+    widget.$emit(!value || value.match(EMAIL_REGEXP) ? "$valid" : "$invalid", "EMAIL");
+  });
+});
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.url
+ *
+ * @description
+ * Text input with URL validation. Sets the `URL` validation error key if the content is not a
+ * valid URL.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
+ *    minlength.
+ * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
+ *    maxlength.
+ * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
+ *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
+ *    patterns defined as scope expressions.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.text = 'http://google.com';
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           URL: <input type="url" name="input" ng:model="text" required>
+           <span class="error" ng:show="myForm.input.$error.REQUIRED">
+             Required!</span>
+           <span class="error" ng:show="myForm.input.$error.url">
+             Not valid url!</span>
+         </form>
+         <tt>text = {{text}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+         <tt>myForm.$error.url = {{!!myForm.$error.url}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+          expect(binding('text')).toEqual('http://google.com');
+          expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+          input('text').enter('');
+          expect(binding('text')).toEqual('');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+
+        it('should be invalid if not url', function() {
+          input('text').enter('xxx');
+          expect(binding('text')).toEqual('xxx');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('url', function(element, widget) {
+  widget.$on('$validate', function(event) {
+    var value = widget.$viewValue;
+    widget.$emit(!value || value.match(URL_REGEXP) ? "$valid" : "$invalid", "URL");
+  });
+});
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.list
+ *
+ * @description
+ * Text input that converts between comma-seperated string into an array of strings.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
+ *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
+ *    patterns defined as scope expressions.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.names = ['igor', 'misko', 'vojta'];
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           List: <input type="list" name="input" ng:model="names" required>
+           <span class="error" ng:show="myForm.list.$error.REQUIRED">
+             Required!</span>
+         </form>
+         <tt>names = {{names}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+          expect(binding('names')).toEqual('["igor","misko","vojta"]');
+          expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+          input('names').enter('');
+          expect(binding('names')).toEqual('[]');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('list', function(element, widget) {
+  function parse(viewValue) {
+    var list = [];
+    forEach(viewValue.split(/\s*,\s*/), function(value){
+      if (value) list.push(trim(value));
+    });
+    return list;
+  }
+  widget.$parseView = function() {
+    isString(widget.$viewValue) && (widget.$modelValue = parse(widget.$viewValue));
+  };
+  widget.$parseModel = function() {
+    var modelValue = widget.$modelValue;
+    if (isArray(modelValue)
+        && (!isString(widget.$viewValue) || !equals(parse(widget.$viewValue), modelValue))) {
+      widget.$viewValue =  modelValue.join(', ');
+    }
+  };
+});
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.number
+ *
+ * @description
+ * Text input with number validation and transformation. Sets the `NUMBER` validation
+ * error if not a valid number.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} min Sets the `MIN` validation error key if the value entered is less then `min`.
+ * @param {string=} max Sets the `MAX` validation error key if the value entered is greater then `min`.
+ * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
+ *    minlength.
+ * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
+ *    maxlength.
+ * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
+ *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
+ *    patterns defined as scope expressions.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.value = 12;
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           Number: <input type="number" name="input" ng:model="value"
+                          min="0" max="99" required>
+           <span class="error" ng:show="myForm.list.$error.REQUIRED">
+             Required!</span>
+           <span class="error" ng:show="myForm.list.$error.NUMBER">
+             Not valid number!</span>
+         </form>
+         <tt>value = {{value}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+         expect(binding('value')).toEqual('12');
+         expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+         input('value').enter('');
+         expect(binding('value')).toEqual('');
+         expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+
+        it('should be invalid if over max', function() {
+         input('value').enter('123');
+         expect(binding('value')).toEqual('123');
+         expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('number', numericRegexpInputType(NUMBER_REGEXP, 'NUMBER'));
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.integer
+ *
+ * @description
+ * Text input with integer validation and transformation. Sets the `INTEGER`
+ * validation error key if not a valid integer.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} min Sets the `MIN` validation error key if the value entered is less then `min`.
+ * @param {string=} max Sets the `MAX` validation error key if the value entered is greater then `min`.
+ * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
+ *    minlength.
+ * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
+ *    maxlength.
+ * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
+ *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
+ *    patterns defined as scope expressions.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.value = 12;
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           Integer: <input type="integer" name="input" ng:model="value"
+                           min="0" max="99" required>
+           <span class="error" ng:show="myForm.list.$error.REQUIRED">
+             Required!</span>
+           <span class="error" ng:show="myForm.list.$error.INTEGER">
+             Not valid integer!</span>
+         </form>
+         <tt>value = {{value}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should initialize to model', function() {
+          expect(binding('value')).toEqual('12');
+          expect(binding('myForm.input.$valid')).toEqual('true');
+        });
+
+        it('should be invalid if empty', function() {
+          input('value').enter('1.2');
+          expect(binding('value')).toEqual('12');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+
+        it('should be invalid if over max', function() {
+          input('value').enter('123');
+          expect(binding('value')).toEqual('123');
+          expect(binding('myForm.input.$valid')).toEqual('false');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('integer', numericRegexpInputType(INTEGER_REGEXP, 'INTEGER'));
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.checkbox
+ *
+ * @description
+ * HTML checkbox.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} ng:true-value The value to which the expression should be set when selected.
+ * @param {string=} ng:false-value The value to which the expression should be set when not selected.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.value1 = true;
+           $scope.value2 = 'YES'
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           Value1: <input type="checkbox" ng:model="value1"> <br/>
+           Value2: <input type="checkbox" ng:model="value2"
+                          ng:true-value="YES" ng:false-value="NO"> <br/>
+         </form>
+         <tt>value1 = {{value1}}</tt><br/>
+         <tt>value2 = {{value2}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should change state', function() {
+          expect(binding('value1')).toEqual('true');
+          expect(binding('value2')).toEqual('YES');
+
+          input('value1').check();
+          input('value2').check();
+          expect(binding('value1')).toEqual('false');
+          expect(binding('value2')).toEqual('NO');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('checkbox', function(inputElement, widget) {
+  var trueValue = inputElement.attr('ng:true-value'),
+      falseValue = inputElement.attr('ng:false-value');
+
+  if (!isString(trueValue)) trueValue = true;
+  if (!isString(falseValue)) falseValue = false;
+
+  inputElement.bind('click', function() {
+    widget.$apply(function() {
+      widget.$emit('$viewChange', inputElement[0].checked);
+    });
+  });
+
+  widget.$render = function() {
+    inputElement[0].checked = widget.$viewValue;
+  };
+
+  widget.$parseModel = function() {
+    widget.$viewValue = widget.$modelValue === trueValue;
+  };
+
+  widget.$parseView = function() {
+    widget.$modelValue = widget.$viewValue ? trueValue : falseValue;
+  };
+});
+
+
+/**
+ * @ngdoc inputType
+ * @name angular.inputType.radio
+ *
+ * @description
+ * HTML radio button.
+ *
+ * @param {string} ng:model Assignable angular expression to data-bind to.
+ * @param {string} value The value to which the expression should be set when selected.
+ * @param {string=} name Property name of the form under which the widgets is published.
+ * @param {string=} ng:change Angular expression to be executed when input changes due to user
+ *    interaction with the input element.
+ *
+ * @example
+    <doc:example>
+      <doc:source>
+       <script>
+         function Ctrl($scope) {
+           $scope.color = 'blue';
+         }
+       </script>
+       <div ng:controller="Ctrl">
+         <form name="myForm">
+           <input type="radio" ng:model="color" value="red">  Red <br/>
+           <input type="radio" ng:model="color" value="green"> Green <br/>
+           <input type="radio" ng:model="color" value="blue"> Blue <br/>
+         </form>
+         <tt>color = {{color}}</tt><br/>
+       </div>
+      </doc:source>
+      <doc:scenario>
+        it('should change state', function() {
+          expect(binding('color')).toEqual('blue');
+
+          input('color').select('red');
+          expect(binding('color')).toEqual('red');
+        });
+      </doc:scenario>
+    </doc:example>
+ */
+angularInputType('radio', function(inputElement, widget, attr) {
+  //correct the name
+  attr.$set('name', widget.$id + '@' + attr.name);
+  inputElement.bind('click', function() {
+    widget.$apply(function() {
+      if (inputElement[0].checked) {
+        widget.$emit('$viewChange', attr.value);
+      }
+    });
+  });
+
+  widget.$render = function() {
+    inputElement[0].checked = isDefined(attr.value) && (attr.value == widget.$viewValue);
+  };
+
+  if (inputElement[0].checked) {
+    widget.$viewValue = attr.value;
+  }
+});
+
+
+function numericRegexpInputType(regexp, error) {
+  return function(inputElement, widget) {
+    var min = 1 * (inputElement.attr('min') || Number.MIN_VALUE),
+        max = 1 * (inputElement.attr('max') || Number.MAX_VALUE);
+
+    widget.$on('$validate', function(event){
+      var value = widget.$viewValue,
+          filled = value && trim(value) != '',
+          valid = isString(value) && value.match(regexp);
+
+      widget.$emit(!filled || valid ? "$valid" : "$invalid", error);
+      filled && (value = 1 * value);
+      widget.$emit(valid && value < min ? "$invalid" : "$valid", "MIN");
+      widget.$emit(valid && value > max ? "$invalid" : "$valid", "MAX");
+    });
+
+    widget.$parseView = function() {
+      if (widget.$viewValue.match(regexp)) {
+        widget.$modelValue = 1 * widget.$viewValue;
+      } else if (widget.$viewValue == '') {
+        widget.$modelValue = null;
+      }
+    };
+
+    widget.$parseModel = function() {
+      widget.$viewValue = isNumber(widget.$modelValue)
+        ? '' + widget.$modelValue
+        : '';
+    };
+  };
+}
+
+
+var HTML5_INPUTS_TYPES =  makeMap(
+        "search,tel,url,email,datetime,date,month,week,time,datetime-local,number,range,color," +
+        "radio,checkbox,text,button,submit,reset,hidden,password");
 
 
 /**
@@ -13430,6 +13843,14 @@ function checkboxInputType(scope, element, attr, ctrl) {
  * HTML input element widget with angular data-binding. Input widget follows HTML5 input types
  * and polyfills the HTML5 validation behavior for older browsers.
  *
+ * The {@link angular.inputType custom angular.inputType}s provide a shorthand for declaring new
+ * inputs. This is a sharthand for text-box based inputs, and there is no need to go through the
+ * full {@link angular.module.ng.$formFactory $formFactory} widget lifecycle.
+ *
+ *
+ * @param {string} type Widget types as defined by {@link angular.inputType}. If the
+ *    type is in the format of `@ScopeType` then `ScopeType` is loaded from the
+ *    current scope, allowing quick definition of type.
  * @param {string} ng:model Assignable angular expression to data-bind to.
  * @param {string=} name Property name of the form under which the widgets is published.
  * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
@@ -13454,530 +13875,215 @@ function checkboxInputType(scope, element, attr, ctrl) {
        <div ng:controller="Ctrl">
          <form name="myForm">
            User name: <input type="text" name="userName" ng:model="user.name" required>
-           <span class="error" ng:show="myForm.userName.error.REQUIRED">
+           <span class="error" ng:show="myForm.userName.$error.REQUIRED">
              Required!</span><br>
            Last name: <input type="text" name="lastName" ng:model="user.last"
              ng:minlength="3" ng:maxlength="10">
-           <span class="error" ng:show="myForm.lastName.error.MINLENGTH">
+           <span class="error" ng:show="myForm.lastName.$error.MINLENGTH">
              Too short!</span>
-           <span class="error" ng:show="myForm.lastName.error.MAXLENGTH">
+           <span class="error" ng:show="myForm.lastName.$error.MAXLENGTH">
              Too long!</span><br>
          </form>
          <hr>
          <tt>user = {{user}}</tt><br/>
-         <tt>myForm.userName.valid = {{myForm.userName.valid}}</tt><br>
-         <tt>myForm.userName.error = {{myForm.userName.error}}</tt><br>
-         <tt>myForm.lastName.valid = {{myForm.lastName.valid}}</tt><br>
-         <tt>myForm.userName.error = {{myForm.lastName.error}}</tt><br>
-         <tt>myForm.valid = {{myForm.valid}}</tt><br>
-         <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br>
-         <tt>myForm.error.MINLENGTH = {{!!myForm.error.MINLENGTH}}</tt><br>
-         <tt>myForm.error.MAXLENGTH = {{!!myForm.error.MAXLENGTH}}</tt><br>
+         <tt>myForm.userName.$valid = {{myForm.userName.$valid}}</tt><br>
+         <tt>myForm.userName.$error = {{myForm.userName.$error}}</tt><br>
+         <tt>myForm.lastName.$valid = {{myForm.lastName.$valid}}</tt><br>
+         <tt>myForm.userName.$error = {{myForm.lastName.$error}}</tt><br>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br>
+         <tt>myForm.$error.REQUIRED = {{!!myForm.$error.REQUIRED}}</tt><br>
+         <tt>myForm.$error.MINLENGTH = {{!!myForm.$error.MINLENGTH}}</tt><br>
+         <tt>myForm.$error.MAXLENGTH = {{!!myForm.$error.MAXLENGTH}}</tt><br>
        </div>
       </doc:source>
       <doc:scenario>
         it('should initialize to model', function() {
           expect(binding('user')).toEqual('{"last":"visitor","name":"guest"}');
-          expect(binding('myForm.userName.valid')).toEqual('true');
-          expect(binding('myForm.valid')).toEqual('true');
+          expect(binding('myForm.userName.$valid')).toEqual('true');
+          expect(binding('myForm.$valid')).toEqual('true');
         });
 
         it('should be invalid if empty when required', function() {
           input('user.name').enter('');
-          expect(binding('user')).toEqual('{"last":"visitor","name":null}');
-          expect(binding('myForm.userName.valid')).toEqual('false');
-          expect(binding('myForm.valid')).toEqual('false');
+          expect(binding('user')).toEqual('{"last":"visitor","name":""}');
+          expect(binding('myForm.userName.$valid')).toEqual('false');
+          expect(binding('myForm.$valid')).toEqual('false');
         });
 
         it('should be valid if empty when min length is set', function() {
           input('user.last').enter('');
           expect(binding('user')).toEqual('{"last":"","name":"guest"}');
-          expect(binding('myForm.lastName.valid')).toEqual('true');
-          expect(binding('myForm.valid')).toEqual('true');
+          expect(binding('myForm.lastName.$valid')).toEqual('true');
+          expect(binding('myForm.$valid')).toEqual('true');
         });
 
         it('should be invalid if less than required min length', function() {
           input('user.last').enter('xx');
-          expect(binding('user')).toEqual('{"last":"visitor","name":"guest"}');
-          expect(binding('myForm.lastName.valid')).toEqual('false');
-          expect(binding('myForm.lastName.error')).toMatch(/MINLENGTH/);
-          expect(binding('myForm.valid')).toEqual('false');
+          expect(binding('user')).toEqual('{"last":"xx","name":"guest"}');
+          expect(binding('myForm.lastName.$valid')).toEqual('false');
+          expect(binding('myForm.lastName.$error')).toMatch(/MINLENGTH/);
+          expect(binding('myForm.$valid')).toEqual('false');
         });
 
         it('should be valid if longer than max length', function() {
           input('user.last').enter('some ridiculously long name');
           expect(binding('user'))
-            .toEqual('{"last":"visitor","name":"guest"}');
-          expect(binding('myForm.lastName.valid')).toEqual('false');
-          expect(binding('myForm.lastName.error')).toMatch(/MAXLENGTH/);
-          expect(binding('myForm.valid')).toEqual('false');
+            .toEqual('{"last":"some ridiculously long name","name":"guest"}');
+          expect(binding('myForm.lastName.$valid')).toEqual('false');
+          expect(binding('myForm.lastName.$error')).toMatch(/MAXLENGTH/);
+          expect(binding('myForm.$valid')).toEqual('false');
         });
       </doc:scenario>
     </doc:example>
  */
-var inputDirective = [function() {
+var inputDirective = ['$defer', '$formFactory', function($defer, $formFactory) {
   return {
     restrict: 'E',
-    require: '?ngModel',
-    link: function(scope, element, attr, ctrl) {
-      if (ctrl) {
-        (inputType[lowercase(attr.type)] || inputType.text)(scope, element, attr, ctrl);
+    link: function(modelScope, inputElement, attr) {
+      if (!attr.ngModel) return;
+
+      var form = $formFactory.forElement(inputElement),
+          // We have to use .getAttribute, since jQuery tries to be smart and use the
+          // type property. Trouble is some browser change unknown to text.
+          type = attr.type || 'text',
+          TypeController,
+          patternMatch, widget,
+          pattern = attr.ngPattern,
+          modelExp = attr.ngModel,
+          minlength = parseInt(attr.ngMinlength, 10),
+          maxlength = parseInt(attr.ngMaxlength, 10),
+          loadFromScope = type.match(/^\s*\@\s*(.*)/);
+
+       if (!pattern) {
+         patternMatch = valueFn(true);
+       } else {
+         if (pattern.match(/^\/(.*)\/$/)) {
+           pattern = new RegExp(pattern.substr(1, pattern.length - 2));
+           patternMatch = function(value) {
+             return pattern.test(value);
+           };
+         } else {
+           patternMatch = function(value) {
+             var patternObj = modelScope.$eval(pattern);
+             if (!patternObj || !patternObj.test) {
+               throw new Error('Expected ' + pattern + ' to be a RegExp but was ' + patternObj);
+             }
+             return patternObj.test(value);
+           };
+         }
+       }
+
+      type = lowercase(type);
+      TypeController = (loadFromScope
+              ? assertArgFn(modelScope.$eval(loadFromScope[1]), loadFromScope[1])
+              : angularInputType(type)) || noop;
+
+      if (!HTML5_INPUTS_TYPES[type]) {
+        try {
+          // jquery will not let you so we have to go to bare metal
+          inputElement[0].setAttribute('type', 'text');
+        } catch(e){
+          // also turns out that ie8 will not allow changing of types, but since it is not
+          // html5 anyway we can ignore the error.
+        }
       }
-    }
-  };
-}];
 
+      //TODO(misko): setting $inject is a hack
+      !TypeController.$inject && (TypeController.$inject = ['$element', '$scope', '$attr']);
+      widget = form.$createWidget({
+          scope: modelScope,
+          model: modelExp,
+          onChange: attr.ngChange,
+          alias: attr.name,
+          controller: TypeController,
+          controllerArgs: {$element: inputElement, $attr: attr}
+      });
 
-/**
- * @ngdoc object
- * @name angular.module.ng.$compileProvider.directive.ng:model.NgModelController
- *
- * @property {string} viewValue Actual string value in the view.
- * @property {*} modelValue The value in the model, that the widget is bound to.
- * @property {Array.<Function>} parsers Whenever the widget reads value from the DOM, it executes
- *     all of these functions to sanitize / convert the value as well as validate.
- *
- * @property {Array.<Function>} formatters Wheneveer the model value changes, it executes all of
- *     these functions to convert the value as well as validate.
- *
- * @property {Object} error An bject hash with all errors as keys.
- *
- * @property {boolean} pristine True if user has not interacted with the widget yet.
- * @property {boolean} dirty True if user has already interacted with the widget.
- * @property {boolean} valid True if there is no error.
- * @property {boolean} invalid True if at least one error on the widget.
- *
- * @description
- *
- */
-var NgModelController = ['$scope', '$exceptionHandler', 'ngModel',
-    function($scope, $exceptionHandler, ngModel) {
-  this.viewValue = Number.NaN;
-  this.modelValue = Number.NaN;
-  this.parsers = [];
-  this.formatters = [];
-  this.error = {};
-  this.pristine = true;
-  this.dirty = false;
-  this.valid = true;
-  this.invalid = false;
-  this.render = noop;
+      widget.$pristine = !(widget.$dirty = false);
 
+      widget.$on('$validate', function() {
+        var $viewValue = trim(widget.$viewValue),
+            inValid = attr.required && !$viewValue,
+            tooLong = maxlength && $viewValue && $viewValue.length > maxlength,
+            tooShort = minlength && $viewValue && $viewValue.length < minlength,
+            missMatch = $viewValue && !patternMatch($viewValue);
 
-  /**
-   * @ngdoc function
-   * @name angular.module.ng.$compileProvider.directive.ng:model.NgModelController#touch
-   * @methodOf angular.module.ng.$compileProvider.directive.ng:model.NgModelController
-   *
-   * @return {boolean} Whether it did change state.
-   *
-   * @description
-   * This method should be called from within a DOM event handler.
-   * For example {@link angular.module.ng.$compileProvider.directive.input input} or
-   * {@link angular.module.ng.$compileProvider.directive.select select} directives call it.
-   *
-   * It changes state to `dirty` and emits `$viewTouch` event if the state was `pristine` before.
-   */
-  this.touch = function() {
-    if (this.dirty) return false;
-
-    this.dirty = true;
-    this.pristine = false;
-    try {
-      $scope.$emit('$viewTouch');
-    } catch (e) {
-      $exceptionHandler(e);
-    }
-    return true;
-  };
-
-
-  /**
-   * @ngdoc function
-   * @name angular.module.ng.$compileProvider.directive.ng:model.NgModelController#setValidity
-   * @methodOf angular.module.ng.$compileProvider.directive.ng:model.NgModelController
-   *
-   * @description
-   * Change the validity state, and notifies the form when the widget changes validity. (i.e. does
-   * not emit `$invalid` if given validator is already marked as invalid).
-   *
-   * This method should be called by validators - ie the parser or formatter method.
-   *
-   * @param {string} name Name of the validator.
-   * @param {boolean} isValid Whether it should $emit `$valid` (true) or `$invalid` (false) event.
-   */
-  this.setValidity = function(name, isValid) {
-
-    if (!isValid && this.error[name]) return;
-    if (isValid && !this.error[name]) return;
-
-    if (isValid) {
-      delete this.error[name];
-      if (equals(this.error, {})) {
-        this.valid = true;
-        this.invalid = false;
-      }
-    } else {
-      this.error[name] = true;
-      this.invalid = true;
-      this.valid = false;
-    }
-
-    return $scope.$emit(isValid ? '$valid' : '$invalid', name, this);
-  };
-
-
-  /**
-   * @ngdoc function
-   * @name angular.module.ng.$compileProvider.directive.ng:model.NgModelController#read
-   * @methodOf angular.module.ng.$compileProvider.directive.ng:model.NgModelController
-   *
-   * @description
-   * Read a value from view.
-   *
-   * This method should be called from within a DOM event handler.
-   * For example {@link angular.module.ng.$compileProvider.directive.input input} or
-   * {@link angular.module.ng.$compileProvider.directive.select select} directives call it.
-   *
-   * It internally calls all `formatters` and if resulted value is valid, update the model and emits
-   * `$viewChange` event afterwards.
-   *
-   * @param {string} value Value from the view
-   */
-  this.read = function(value) {
-    this.viewValue = value;
-
-    forEach(this.parsers, function(fn) {
-      value = fn(value);
-    });
-
-    if (isDefined(value) && this.model !== value) {
-      this.modelValue = value;
-      ngModel(value);
-      $scope.$emit('$viewChange', value, this);
-    }
-  };
-
-  // model -> value
-  var ctrl = this;
-  $scope.$watch(function() {
-    return ngModel();
-  }, function(value) {
-
-    // ignore change from view
-    if (ctrl.modelValue === value) return;
-
-    var formatters = ctrl.formatters,
-        idx = formatters.length;
-
-    ctrl.modelValue = value;
-    while(idx--) {
-      value = formatters[idx](value);
-    }
-
-    if (isDefined(value) && ctrl.viewValue !== value) {
-      ctrl.viewValue = value;
-      ctrl.render();
-    }
-  });
-}];
-
-
-/**
- * @ngdoc directive
- * @name angular.module.ng.$compileProvider.directive.ng:model
- *
- * @element input
- *
- * @description
- * Is directive that tells Angular to do two-way data binding. It works together with `input`,
- * `select`, `textarea`. You can easily write your own directives to use `ng:model` as well.
- *
- * `ng:model` is responsible for:
- *
- * - binding the view into the model, which other directives such as `input`, `textarea` or `select`
- *   require,
- * - providing validation behavior (i.e. required, number, email, url),
- * - keeping state of the widget (valid/invalid, dirty/pristine, validation errors),
- * - setting related css class onto the element (`ng-valid`, `ng-invalid`, `ng-dirty`, `ng-pristine`),
- * - register the widget with parent {@link angular.module.ng.$compileProvider.directive.form form}.
- *
- * For basic examples, how to use `ng:model`, see:
- *
- *  - {@link angular.module.ng.$compileProvider.directive.input input}
- *    - {@link angular.module.ng.$compileProvider.directive.input.text text}
- *    - {@link angular.module.ng.$compileProvider.directive.input.checkbox checkbox}
- *    - {@link angular.module.ng.$compileProvider.directive.input.radio radio}
- *    - {@link angular.module.ng.$compileProvider.directive.input.number number}
- *    - {@link angular.module.ng.$compileProvider.directive.input.email email}
- *    - {@link angular.module.ng.$compileProvider.directive.input.url url}
- *  - {@link angular.module.ng.$compileProvider.directive.select select}
- *  - {@link angular.module.ng.$compileProvider.directive.textarea textarea}
- *
- */
-var ngModelDirective = [function() {
-  return {
-    inject: {
-      ngModel: 'accessor'
-    },
-    require: ['ngModel', '^?form'],
-    controller: NgModelController,
-    link: function(scope, element, attr, controllers) {
-      var modelController = controllers[0],
-          formController = controllers[1];
-
-      if (formController) {
-        formController.registerWidget(modelController, attr.name);
-      }
+        if (widget.$error.REQUIRED != inValid){
+          widget.$emit(inValid ? '$invalid' : '$valid', 'REQUIRED');
+        }
+        if (widget.$error.PATTERN != missMatch){
+          widget.$emit(missMatch ? '$invalid' : '$valid', 'PATTERN');
+        }
+        if (widget.$error.MINLENGTH != tooShort){
+          widget.$emit(tooShort ? '$invalid' : '$valid', 'MINLENGTH');
+        }
+        if (widget.$error.MAXLENGTH != tooLong){
+          widget.$emit(tooLong ? '$invalid' : '$valid', 'MAXLENGTH');
+        }
+      });
 
       forEach(['valid', 'invalid', 'pristine', 'dirty'], function(name) {
-        scope.$watch(function() {
-          return modelController[name];
-        }, function(value) {
-          element[value ? 'addClass' : 'removeClass']('ng-' + name);
+        widget.$watch('$' + name, function(value) {
+          inputElement[value ? 'addClass' : 'removeClass']('ng-' + name);
         });
       });
 
-      element.bind('$destroy', function() {
-        scope.$emit('$destroy', modelController);
+      inputElement.bind('$destroy', function() {
+        widget.$destroy();
       });
-    }
-  };
-}];
 
+      if (type != 'checkbox' && type != 'radio') {
+        // TODO (misko): checkbox / radio does not really belong here, but until we can do
+        // widget registration with CSS, we are hacking it this way.
+        widget.$render = function() {
+          inputElement.val(widget.$viewValue || '');
+        };
 
-/**
- * @ngdoc directive
- * @name angular.module.ng.$compileProvider.directive.ng:change
- *
- * @description
- * Evaluate given expression when user changes the input.
- * The expression is not evaluated when the value change is coming from the model.
- *
- * Note, this directive requires `ng:model` to be present.
- *
- * @element input
- *
- * @example
- * <doc:example>
- *   <doc:source>
- *     <script>
- *       function Controller($scope) {
- *         $scope.counter = 0;
- *         $scope.change = function() {
- *           $scope.counter++;
- *         };
- *       }
- *     </script>
- *     <div ng:controller="Controller">
- *       <input type="checkbox" ng:model="confirmed" ng:change="change()" id="ng-change-example1" />
- *       <input type="checkbox" ng:model="confirmed" id="ng-change-example2" />
- *       <label for="ng-change-example2">Confirmed</label><br />
- *       debug = {{confirmed}}<br />
- *       counter = {{counter}}
- *     </div>
- *   </doc:source>
- *   <doc:scenario>
- *     it('should evaluate the expression if changing from view', function() {
- *       expect(binding('counter')).toEqual('0');
- *       element('#ng-change-example1').click();
- *       expect(binding('counter')).toEqual('1');
- *       expect(binding('confirmed')).toEqual('true');
- *     });
- *
- *     it('should not evaluate the expression if changing from model', function() {
- *       element('#ng-change-example2').click();
- *       expect(binding('counter')).toEqual('0');
- *       expect(binding('confirmed')).toEqual('true');
- *     });
- *   </doc:scenario>
- * </doc:example>
- */
-var ngChangeDirective = valueFn({
-  require: 'ngModel',
-  link: function(scope, element, attr, ctrl) {
-    scope.$on('$viewChange', function(event, value, widget) {
-      if (ctrl === widget) scope.$eval(attr.ngChange);
-    });
-  }
-});
-
-
-/**
- * @ngdoc directive
- * @name angular.module.ng.$compileProvider.directive.ng:model-instant
- *
- * @element input
- *
- * @description
- * By default, Angular udpates the model only on `blur` event - when the input looses focus.
- * If you want to update after every key stroke, use `ng:model-instant`.
- *
- * @example
- * <doc:example>
- *   <doc:source>
- *     First name: <input type="text" ng:model="firstName" /><br />
- *     Last name: <input type="text" ng:model="lastName" ng:model-instant /><br />
- *
- *     First name ({{firstName}}) is only updated on `blur` event, but the last name ({{lastName}})
- *     is updated immediately, because of using `ng:model-instant`.
- *   </doc:source>
- *   <doc:scenario>
- *     it('should update first name on blur', function() {
- *       input('firstName').enter('santa', 'blur');
- *       expect(binding('firstName')).toEqual('santa');
- *     });
- *
- *     it('should update last name immediately', function() {
- *       input('lastName').enter('santa', 'keydown');
- *       expect(binding('lastName')).toEqual('santa');
- *     });
- *   </doc:scenario>
- * </doc:example>
- */
-var ngModelInstantDirective = ['$browser', function($browser) {
-  return {
-    require: 'ngModel',
-    link: function(scope, element, attr, ctrl) {
-      var handler = function() {
-        var touched = ctrl.touch(),
-              value = trim(element.val());
-
-          if (ctrl.viewValue !== value) {
-            scope.$apply(function() {
-              ctrl.read(value);
+        inputElement.bind('keydown change input', function(event){
+          var key = event.keyCode;
+          if (/*command*/   key != 91 &&
+              /*modifiers*/ !(15 < key && key < 19) &&
+              /*arrow*/     !(37 < key && key < 40)) {
+            $defer(function() {
+              widget.$dirty = !(widget.$pristine = false);
+              var value = trim(inputElement.val());
+              if (widget.$viewValue !== value ) {
+                widget.$emit('$viewChange', value);
+              }
             });
-          } else if (touched) {
-            scope.$apply();
           }
-      };
-
-      var timeout;
-      element.bind('keydown', function(event) {
-        var key = event.keyCode;
-
-        //    command            modifiers                   arrows
-        if (key === 91 || (15 < key && key < 19) || (37 <= key && key <= 40)) return;
-
-        if (!timeout) {
-          timeout = $browser.defer(function() {
-            handler();
-            timeout = null;
-          });
-        }
-      });
-
-      element.bind('change input', handler);
-    }
-  };
-}];
-
-
-var requiredDirective = [function() {
-  return {
-    require: '?ngModel',
-    link: function(scope, elm, attr, ctrl) {
-      if (!ctrl) return;
-
-      var validator = function(value) {
-        if (attr.required && isEmpty(value)) {
-          ctrl.setValidity('REQUIRED', false);
-          return null;
-        } else {
-          ctrl.setValidity('REQUIRED', true);
-          return value;
-        }
-      };
-
-      ctrl.formatters.push(validator);
-      ctrl.parsers.unshift(validator);
-
-      attr.$observe('required', function() {
-        validator(ctrl.viewValue);
-      });
+        });
+      }
     }
   };
 }];
 
 
 /**
- * @ngdoc directive
- * @name angular.module.ng.$compileProvider.directive.ng:list
+ * @ngdoc widget
+ * @name angular.module.ng.$compileProvider.directive.textarea
  *
  * @description
- * Text input that converts between comma-seperated string into an array of strings.
+ * HTML textarea element widget with angular data-binding. The data-binding and validation
+ * properties of this element are exactly the same as those of the
+ * {@link angular.module.ng.$compileProvider.directive.input input element}.
  *
+ * @param {string} type Widget types as defined by {@link angular.inputType}. If the
+ *    type is in the format of `@ScopeType` then `ScopeType` is loaded from the
+ *    current scope, allowing quick definition of type.
  * @param {string} ng:model Assignable angular expression to data-bind to.
  * @param {string=} name Property name of the form under which the widgets is published.
  * @param {string=} required Sets `REQUIRED` validation error key if the value is not entered.
+ * @param {number=} ng:minlength Sets `MINLENGTH` validation error key if the value is shorter than
+ *    minlength.
+ * @param {number=} ng:maxlength Sets `MAXLENGTH` validation error key if the value is longer than
+ *    maxlength.
  * @param {string=} ng:pattern Sets `PATTERN` validation error key if the value does not match the
  *    RegExp pattern expression. Expected value is `/regexp/` for inline patterns or `regexp` for
  *    patterns defined as scope expressions.
  * @param {string=} ng:change Angular expression to be executed when input changes due to user
  *    interaction with the input element.
- *
- * @element input
- *
- * @example
-    <doc:example>
-      <doc:source>
-       <script>
-         function Ctrl($scope) {
-           $scope.names = ['igor', 'misko', 'vojta'];
-         }
-       </script>
-       <form name="myForm" ng:controller="Ctrl">
-         List: <input type="list" name="input" ng:model="names" required>
-         <span class="error" ng:show="myForm.list.error.REQUIRED">
-           Required!</span>
-         <tt>names = {{names}}</tt><br/>
-         <tt>myForm.input.valid = {{myForm.input.valid}}</tt><br/>
-         <tt>myForm.input.error = {{myForm.input.error}}</tt><br/>
-         <tt>myForm.valid = {{myForm.valid}}</tt><br/>
-         <tt>myForm.error.REQUIRED = {{!!myForm.error.REQUIRED}}</tt><br/>
-        </form>
-      </doc:source>
-      <doc:scenario>
-        it('should initialize to model', function() {
-          expect(binding('names')).toEqual('["igor","misko","vojta"]');
-          expect(binding('myForm.input.valid')).toEqual('true');
-        });
-
-        it('should be invalid if empty', function() {
-          input('names').enter('');
-          expect(binding('names')).toEqual('');
-          expect(binding('myForm.input.valid')).toEqual('false');
-        });
-      </doc:scenario>
-    </doc:example>
  */
-var ngListDirective = function() {
-  return {
-    require: 'ngModel',
-    link: function(scope, element, attr, ctrl) {
-      var parse = function(viewValue) {
-        var list = [];
-
-        if (viewValue) {
-          forEach(viewValue.split(/\s*,\s*/), function(value) {
-            if (value) list.push(value);
-          });
-        }
-
-        return list;
-      };
-
-      ctrl.parsers.push(parse);
-      ctrl.formatters.push(function(value) {
-        if (isArray(value) && !equals(parse(ctrl.viewValue), value)) {
-          return value.join(', ');
-        }
-
-        return undefined;
-      });
-    }
-  };
-};
 
 /**
  * @ngdoc widget
@@ -14102,79 +14208,87 @@ var ngListDirective = function() {
  */
 
 var ngOptionsDirective = valueFn({ terminal: true });
-var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
+var selectDirective = ['$formFactory', '$compile', '$parse',
+               function($formFactory,   $compile,   $parse){
                          //00001111100000000000222200000000000000000000003333000000000000044444444444444444000000000555555555555555550000000666666666666666660000000000000007777
   var NG_OPTIONS_REGEXP = /^\s*(.*?)(?:\s+as\s+(.*?))?(?:\s+group\s+by\s+(.*))?\s+for\s+(?:([\$\w][\$\w\d]*)|(?:\(\s*([\$\w][\$\w\d]*)\s*,\s*([\$\w][\$\w\d]*)\s*\)))\s+in\s+(.*)$/;
 
   return {
     restrict: 'E',
-    require: '?ngModel',
-    link: function(scope, element, attr, ctrl) {
-      if (!ctrl) return;
+    link: function(modelScope, selectElement, attr) {
+      if (!attr.ngModel) return;
+      var form = $formFactory.forElement(selectElement),
+          multiple = attr.multiple,
+          optionsExp = attr.ngOptions,
+          modelExp = attr.ngModel,
+          widget = form.$createWidget({
+            scope: modelScope,
+            model: modelExp,
+            onChange: attr.ngChange,
+            alias: attr.name,
+            controller: ['$scope', optionsExp ? Options : (multiple ? Multiple : Single)]});
 
-      var multiple = attr.multiple,
-          optionsExp = attr.ngOptions;
+      selectElement.bind('$destroy', function() { widget.$destroy(); });
 
-      // required validator
-      if (multiple && (attr.required || attr.ngRequired)) {
-        var requiredValidator = function(value) {
-          ctrl.setValidity('REQUIRED', !attr.required || (value && value.length));
-          return value;
-        };
+      widget.$pristine = !(widget.$dirty = false);
 
-        ctrl.parsers.push(requiredValidator);
-        ctrl.formatters.unshift(requiredValidator);
+      widget.$on('$validate', function() {
+        var valid = !attr.required || !!widget.$modelValue;
+        if (valid && multiple && attr.required) valid = !!widget.$modelValue.length;
+        if (valid !== !widget.$error.REQUIRED) {
+          widget.$emit(valid ? '$valid' : '$invalid', 'REQUIRED');
+        }
+      });
 
-        attr.$observe('required', function() {
-          requiredValidator(ctrl.viewValue);
+      widget.$on('$viewChange', function() {
+        widget.$pristine = !(widget.$dirty = true);
+      });
+
+      forEach(['valid', 'invalid', 'pristine', 'dirty'], function(name) {
+        widget.$watch('$' + name, function(value) {
+          selectElement[value ? 'addClass' : 'removeClass']('ng-' + name);
         });
-      }
-
-      if (optionsExp) Options(scope, element, ctrl);
-      else if (multiple) Multiple(scope, element, ctrl);
-      else Single(scope, element, ctrl);
-
+      });
 
       ////////////////////////////
 
-
-
-      function Single(scope, selectElement, ctrl) {
-        ctrl.render = function() {
-          selectElement.val(ctrl.viewValue);
-        };
-
-        selectElement.bind('change', function() {
-          scope.$apply(function() {
-            ctrl.touch();
-            ctrl.read(selectElement.val());
-          });
-        });
-      }
-
-      function Multiple(scope, selectElement, ctrl) {
-        ctrl.render = function() {
-          var items = new HashMap(ctrl.viewValue);
-          forEach(selectElement.children(), function(option) {
+      function Multiple(widget) {
+        widget.$render = function() {
+          var items = new HashMap(this.$viewValue);
+          forEach(selectElement.children(), function(option){
             option.selected = isDefined(items.get(option.value));
           });
         };
 
         selectElement.bind('change', function() {
-          scope.$apply(function() {
+          widget.$apply(function() {
             var array = [];
-            forEach(selectElement.children(), function(option) {
+            forEach(selectElement.children(), function(option){
               if (option.selected) {
                 array.push(option.value);
               }
             });
-            ctrl.touch();
-            ctrl.read(array);
+            widget.$emit('$viewChange', array);
           });
         });
+
       }
 
-      function Options(scope, selectElement, ctrl) {
+      function Single(widget) {
+        widget.$render = function() {
+          selectElement.val(widget.$viewValue);
+        };
+
+        selectElement.bind('change', function() {
+          widget.$apply(function() {
+            widget.$emit('$viewChange', selectElement.val());
+          });
+        });
+
+        widget.$viewValue = selectElement.val();
+      }
+
+      function Options(widget) {
         var match;
 
         if (! (match = optionsExp.match(NG_OPTIONS_REGEXP))) {
@@ -14205,15 +14319,15 @@ var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
             // developer declared null option, so user should be able to select it
             nullOption = jqLite(option).remove();
             // compile the element since there might be bindings in it
-            $compile(nullOption)(scope);
+            $compile(nullOption)(modelScope);
           }
         });
         selectElement.html(''); // clear contents
 
         selectElement.bind('change', function() {
-          scope.$apply(function() {
+          widget.$apply(function() {
             var optionGroup,
-                collection = valuesFn(scope) || [],
+                collection = valuesFn(modelScope) || [],
                 locals = {},
                 key, value, optionElement, index, groupIndex, length, groupLength;
 
@@ -14230,7 +14344,7 @@ var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
                     key = optionElement.val();
                     if (keyName) locals[keyName] = key;
                     locals[valueName] = collection[key];
-                    value.push(valueFn(scope, locals));
+                    value.push(valueFn(modelScope, locals));
                   }
                 }
               }
@@ -14243,21 +14357,17 @@ var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
               } else {
                 locals[valueName] = collection[key];
                 if (keyName) locals[keyName] = key;
-                value = valueFn(scope, locals);
+                value = valueFn(modelScope, locals);
               }
             }
-            ctrl.touch();
-
-            if (ctrl.viewValue !== value) {
-              ctrl.read(value);
+            if (isDefined(value) && modelScope.$viewVal !== value) {
+              widget.$emit('$viewChange', value);
             }
           });
         });
 
-        ctrl.render = render;
-
-        // TODO(vojta): can't we optimize this ?
-        scope.$watch(render);
+        widget.$watch(render);
+        widget.$render = render;
 
         function render() {
           var optionGroups = {'':[]}, // Temporary location for the option groups before we render them
@@ -14266,8 +14376,8 @@ var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
               optionGroup,
               option,
               existingParent, existingOptions, existingOption,
-              modelValue = ctrl.modelValue,
-              values = valuesFn(scope) || [],
+              modelValue = widget.$modelValue,
+              values = valuesFn(modelScope) || [],
               keys = keyName ? sortedKeys(values) : values,
               groupLength, length,
               groupIndex, index,
@@ -14288,20 +14398,20 @@ var selectDirective = ['$compile', '$parse', function($compile,   $parse) {
           // We now build up the list of options we need (we merge later)
           for (index = 0; length = keys.length, index < length; index++) {
                locals[valueName] = values[keyName ? locals[keyName]=keys[index]:index];
-               optionGroupName = groupByFn(scope, locals) || '';
+               optionGroupName = groupByFn(modelScope, locals) || '';
             if (!(optionGroup = optionGroups[optionGroupName])) {
               optionGroup = optionGroups[optionGroupName] = [];
               optionGroupNames.push(optionGroupName);
             }
             if (multiple) {
-              selected = selectedSet.remove(valueFn(scope, locals)) != undefined;
+              selected = selectedSet.remove(valueFn(modelScope, locals)) != undefined;
             } else {
-              selected = modelValue === valueFn(scope, locals);
+              selected = modelValue === valueFn(modelScope, locals);
               selectedSet = selectedSet || selected; // see if at least one item is selected
             }
             optionGroup.push({
               id: keyName ? keys[index] : index,   // either the index into array or key from object
-              label: displayFn(scope, locals) || '', // what will be seen by the user
+              label: displayFn(modelScope, locals) || '', // what will be seen by the user
               selected: selected                   // determine if we should be selected
             });
           }
