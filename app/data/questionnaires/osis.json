@@ -40,7 +40,7 @@
       "name": "difficulty-with-clothing",
       "type": "choice",
       "title": "Difficulty putting on clothing",
-      "description": "During the last 3 months...<br/>have you had any trouble have you had any trouble (or worry) with putting on a t-shirt or pullover because of your shoulder?",
+      "description": "<strong>During the last 3 months...</strong><br/>have you had any trouble have you had any trouble (or worry) with putting on a t-shirt or pullover because of your shoulder?",
       "choices":
       [
         { "name": "no-trouble", "title": "No trouble at all", "value": 1 },
