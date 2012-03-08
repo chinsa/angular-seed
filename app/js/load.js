@@ -13,19 +13,18 @@
   }, {
     controllers: "/js/controllers.js"
   }, {
-    services: "/js/services.js"
+    pagerouter: "/js/page-router.js"
   }, {
-    WidgetUtils: "/js/widgetutils.js"
+    questionnaires: "/js/questionnaires.js"
   }, {
-    services: "/js/widgets.js"
+    widgets: "/js/widgets.js"
   }, {
     application: "/js/app.js"
   });
 
   head.ready("application", function() {
     var module;
-    module = angular.module('QuestionnaireApp', ['Services', 'Widgets', 'WidgetUtilsModule']);
-    return module.run(Questionnaire.QuestionnaireApplication);
+    return module = angular.module('QuestionnaireApp', ['AppConfig', 'QuestionnaireModule', 'PageRouterModule', 'WidgetModule']);
   });
 
 }).call(this);

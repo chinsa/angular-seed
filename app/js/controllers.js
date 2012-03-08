@@ -128,25 +128,27 @@
 
     QuestionController.prototype.onQuestionChanged = function() {
       var _this = this;
-      return this.QuestionnaireService.get(this.$scope.questionnaireId).success(function(questionnaire) {
-        var index, question, questions;
-        questions = questionnaire.questions;
-        index = _this.$scope.questionIndex - 1;
-        question = questions[index];
-        _this.$scope.question = question;
-        _this.$scope.answer = _this.$scope.response.answers[index];
-        _this.$scope.questionTemplate = "/templates/questions/" + question.type + ".html";
-        _this.$scope.next = function() {
-          if (index < questions.length - 1) {
-            return _this.$location.path("/" + _this.$scope.questionnaireId + "/" + (index + 2));
-          } else {
-            return _this.$location.path("/" + _this.$scope.questionnaireId + "/summary");
-          }
-        };
-        return _this.$scope.back = function() {
-          return _this.$location.path("/" + _this.$scope.questionnaireId + "/" + index);
-        };
-      });
+      if (!isNaN(this.$scope.questionIndex)) {
+        return this.QuestionnaireService.get(this.$scope.questionnaireId).success(function(questionnaire) {
+          var index, question, questions;
+          questions = questionnaire.questions;
+          index = _this.$scope.questionIndex - 1;
+          question = questions[index];
+          _this.$scope.question = question;
+          _this.$scope.answer = _this.$scope.response.answers[index];
+          _this.$scope.questionTemplate = "/templates/questions/" + question.type + ".html";
+          _this.$scope.next = function() {
+            if (index < questions.length - 1) {
+              return _this.$location.path("/" + _this.$scope.questionnaireId + "/" + (index + 2));
+            } else {
+              return _this.$location.path("/" + _this.$scope.questionnaireId + "/summary");
+            }
+          };
+          return _this.$scope.back = function() {
+            return _this.$location.path("/" + _this.$scope.questionnaireId + "/" + index);
+          };
+        });
+      }
     };
 
     QuestionController.prototype.isValid = function() {

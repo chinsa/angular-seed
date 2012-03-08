@@ -2,7 +2,7 @@
 
 # ui:masked
 # a directive for a text element to obtain masked-field editing capabilities
-Widgets = angular.module('Widgets', [])
+Widgets = angular.module('WidgetModule', [])
 
 Widgets.directive 'uiMasked', ['$parse',($parse)->
   replace: true

@@ -2,7 +2,7 @@
   'use strict';
   var Widgets;
 
-  Widgets = angular.module('Widgets', []);
+  Widgets = angular.module('WidgetModule', []);
 
   Widgets.directive('uiMasked', [
     '$parse', function($parse) {

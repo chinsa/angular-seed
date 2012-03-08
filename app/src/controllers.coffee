@@ -62,21 +62,22 @@ class @Questionnaire.QuestionController
     $scope.$watch("questionIndex", @onQuestionChanged)
   
   onQuestionChanged: ()=>
-    @QuestionnaireService.get(@$scope.questionnaireId)
-    .success((questionnaire)=>
-      questions = questionnaire.questions
-      index = @$scope.questionIndex-1 # questionIndex is 1-based
-      question = questions[index]
-      @$scope.question = question
-      @$scope.answer = @$scope.response.answers[index]
-      @$scope.questionTemplate = "/templates/questions/#{question.type}.html"
-      @$scope.next = ()=>
-        if index < questions.length-1
-          @$location.path("/#{@$scope.questionnaireId}/#{index+2}")
-        else
-          @$location.path("/#{@$scope.questionnaireId}/summary")
-      @$scope.back = ()=> @$location.path("/#{@$scope.questionnaireId}/#{index}")
-    )
+    unless isNaN(@$scope.questionIndex)
+      @QuestionnaireService.get(@$scope.questionnaireId)
+      .success((questionnaire)=>
+        questions = questionnaire.questions
+        index = @$scope.questionIndex-1 # questionIndex is 1-based
+        question = questions[index]
+        @$scope.question = question
+        @$scope.answer = @$scope.response.answers[index]
+        @$scope.questionTemplate = "/templates/questions/#{question.type}.html"
+        @$scope.next = ()=>
+          if index < questions.length-1
+            @$location.path("/#{@$scope.questionnaireId}/#{index+2}")
+          else
+            @$location.path("/#{@$scope.questionnaireId}/summary")
+        @$scope.back = ()=> @$location.path("/#{@$scope.questionnaireId}/#{index}")
+      )
 
   isValid: ()=>
     @$scope.answer?.isValid
