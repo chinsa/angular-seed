@@ -4,38 +4,6 @@ namespace('Questionnaire')
 class @Questionnaire.ApplicationController
   @$inject: ['$rootScope', '$location', '$log', 'QuestionnaireService']
   constructor: (@$rootScope, @$location, @$log, @QuestionnaireService)->
-    @$rootScope.$watch((()=>@$location.path()), @onPathChanged)    
-    @$rootScope.$watch('questionnaireId', @onQuestionnaireChanged)
-
-  # This is the core state of the application; here we decide which page we should be viewing
-  onPathChanged: ()=>
-    urlParts = @$location.path().split('/')
-    @$rootScope.questionnaireId = urlParts?[1] ? ''
-    @$rootScope.questionIndex = Number(urlParts?[2])
-    if @$rootScope.questionnaireId isnt '' and @$rootScope.questionIndex > 0
-      @$rootScope.pageTemplate = '/templates/question.html'
-    else if @$rootScope.questionnaireId isnt '' and urlParts?[2] == 'summary'
-      @$rootScope.pageTemplate = '/templates/questionnaire-summary.html'
-    else if @$rootScope.questionnaireId isnt ''
-      @$rootScope.pageTemplate = '/templates/questionnaire-detail.html'
-    else
-      @$rootScope.pageTemplate = '/templates/questionnaire-list.html'
-
-  onQuestionnaireChanged: ()=>
-    if @$rootScope.questionnaireId isnt ''
-      # The questionnaire we are working on has changed so download it and create a new response
-      @QuestionnaireService.get(@$rootScope.questionnaireId).success (questionnaire)=>
-        @$rootScope.questionnaire = questionnaire
-        now = new Date()
-        @$rootScope.response =
-          questionnaire: questionnaire._id
-          date: now.toDateString()
-          time: now.getTime()
-          type: 'response'
-          answers: questionnaire.questions.map (question, index)->
-            question: question      # the question being answered
-            questionIndex: index+1  # questionIndex is 1-based
-            isValid: false          # initially all answers are invalid
 
 # Controls the display of the list of questionnaires
 class @Questionnaire.QuestionnaireListController

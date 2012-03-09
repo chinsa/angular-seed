@@ -1,17 +1,30 @@
 (function() {
   'use strict';
-  var QuestionnaireService, createFactory;
+  var QuestionnaireService, createFactory,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   QuestionnaireService = (function() {
 
-    QuestionnaireService.$inject = ['$http', '$log'];
+    QuestionnaireService.$inject = ['$http', '$rootScope', '$q', '$log'];
 
-    function QuestionnaireService($http, $log) {
+    function QuestionnaireService($http, $rootScope, $q, $log) {
+      var _this = this;
       this.$http = $http;
+      this.$rootScope = $rootScope;
+      this.$q = $q;
       this.$log = $log;
+      this.newResponse = __bind(this.newResponse, this);
+      this.clearQuestionnaire = __bind(this.clearQuestionnaire, this);
+      this.updateCurrentQuestionnaire = __bind(this.updateCurrentQuestionnaire, this);
       this.$log.log("QuestionnaireService: Initializing");
-      this.questionnairePromises = [];
       this.questionnaireListPromise = null;
+      this.currentQuestionnairePromise = null;
+      this.questionnairePromises = [];
+      this.$rootScope.$watch('questionnaireId', function(id) {
+        if (id == null) id = '';
+        return _this.updateCurrentQuestionnaire(id);
+      });
+      this.$rootScope.$watch('questionIndex', function(value) {});
     }
 
     QuestionnaireService.prototype.list = function() {
@@ -24,50 +37,62 @@
           return questionnaires;
         });
       }
-      return this.questionnaireListPromise.success(function(questionnaire) {});
+      return this.questionnaireListPromise;
     };
 
-    QuestionnaireService.prototype.get = function(name) {
-      var _this = this;
-      this.$log.log("QuestionnaireService: Questionnaire '" + name + "' Requested");
-      if (this.questionnairePromises[name] == null) {
-        this.$log.log("QuestionnaireService: Questionnaire '" + name + "' Loading");
-        this.questionnairePromises[name] = this.$http.get("data/questionnaires/" + name + ".json").success(function(questionnaire) {
-          _this.$log.log("QuestionnaireService: Questionnaire '" + name + "' Loaded");
-          return questionnaire;
-        });
-      }
-      return this.questionnairePromises[name];
-    };
-
-    QuestionnaireService.prototype.newResponse = function() {
-      var date,
+    QuestionnaireService.prototype.get = function(id) {
+      var q,
         _this = this;
-      date = new Date();
-      return this.qs.currentQuestionnaire.success(function(questionnaire) {
-        var question;
-        return _this.currentResponse = {
-          questionnaire: questionnaire,
-          submission: {
-            date: date.toDateString(),
-            time: date.getTime()
-          },
-          hash: null,
-          responses: (function() {
-            var _i, _len, _ref, _results;
-            _ref = questionnaire.questions;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              question = _ref[_i];
-              _results.push({
-                question: question,
-                choice: null
-              });
-            }
-            return _results;
-          })()
-        };
+      if (id === '') {
+        this.$log.log("QuestionnaireService: Questionnaire '" + id + "' is Invalid");
+        q = this.$q.defer();
+        q.reject('Invalid questionnaire id');
+        return q.promise;
+      } else {
+        this.$log.log("QuestionnaireService: Questionnaire '" + id + "' Requested");
+        if (this.questionnairePromises[id] == null) {
+          this.$log.log("QuestionnaireService: Questionnaire '" + id + "' Loading");
+          this.questionnairePromises[id] = this.$http.get("data/questionnaires/" + id + ".json").success(function(questionnaire) {
+            return _this.$log.log("QuestionnaireService: Questionnaire '" + id + "' Loaded");
+          });
+        }
+        return this.questionnairePromises[id];
+      }
+    };
+
+    QuestionnaireService.prototype.updateCurrentQuestionnaire = function(id) {
+      var _this = this;
+      return this.currentQuestionnairePromise = this.get(id).then(function(response) {
+        var questionnaire;
+        questionnaire = response.data;
+        _this.$rootScope.questionnaire = questionnaire;
+        return _this.$rootScope.response = _this.newResponse(questionnaire);
+      }, function() {
+        return _this.clearQuestionnaire();
       });
+    };
+
+    QuestionnaireService.prototype.clearQuestionnaire = function() {
+      this.$rootScope.questionnaire = null;
+      return this.$rootScope.response = null;
+    };
+
+    QuestionnaireService.prototype.newResponse = function(questionnaire) {
+      var now;
+      now = new Date();
+      return this.$rootScope.response = {
+        questionnaire: questionnaire._id,
+        date: now.toDateString(),
+        time: now.getTime(),
+        type: 'response',
+        answers: questionnaire.questions.map(function(question, index) {
+          return {
+            question: question,
+            questionIndex: index + 1,
+            isValid: false
+          };
+        })
+      };
     };
 
     return QuestionnaireService;

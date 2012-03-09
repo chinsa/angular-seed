@@ -9,58 +9,11 @@
     ApplicationController.$inject = ['$rootScope', '$location', '$log', 'QuestionnaireService'];
 
     function ApplicationController($rootScope, $location, $log, QuestionnaireService) {
-      var _this = this;
       this.$rootScope = $rootScope;
       this.$location = $location;
       this.$log = $log;
       this.QuestionnaireService = QuestionnaireService;
-      this.onQuestionnaireChanged = __bind(this.onQuestionnaireChanged, this);
-      this.onPathChanged = __bind(this.onPathChanged, this);
-      this.$rootScope.$watch((function() {
-        return _this.$location.path();
-      }), this.onPathChanged);
-      this.$rootScope.$watch('questionnaireId', this.onQuestionnaireChanged);
     }
-
-    ApplicationController.prototype.onPathChanged = function() {
-      var urlParts, _ref;
-      urlParts = this.$location.path().split('/');
-      this.$rootScope.questionnaireId = (_ref = urlParts != null ? urlParts[1] : void 0) != null ? _ref : '';
-      this.$rootScope.questionIndex = Number(urlParts != null ? urlParts[2] : void 0);
-      if (this.$rootScope.questionnaireId !== '' && this.$rootScope.questionIndex > 0) {
-        return this.$rootScope.pageTemplate = '/templates/question.html';
-      } else if (this.$rootScope.questionnaireId !== '' && (urlParts != null ? urlParts[2] : void 0) === 'summary') {
-        return this.$rootScope.pageTemplate = '/templates/questionnaire-summary.html';
-      } else if (this.$rootScope.questionnaireId !== '') {
-        return this.$rootScope.pageTemplate = '/templates/questionnaire-detail.html';
-      } else {
-        return this.$rootScope.pageTemplate = '/templates/questionnaire-list.html';
-      }
-    };
-
-    ApplicationController.prototype.onQuestionnaireChanged = function() {
-      var _this = this;
-      if (this.$rootScope.questionnaireId !== '') {
-        return this.QuestionnaireService.get(this.$rootScope.questionnaireId).success(function(questionnaire) {
-          var now;
-          _this.$rootScope.questionnaire = questionnaire;
-          now = new Date();
-          return _this.$rootScope.response = {
-            questionnaire: questionnaire._id,
-            date: now.toDateString(),
-            time: now.getTime(),
-            type: 'response',
-            answers: questionnaire.questions.map(function(question, index) {
-              return {
-                question: question,
-                questionIndex: index + 1,
-                isValid: false
-              };
-            })
-          };
-        });
-      }
-    };
 
     return ApplicationController;
 

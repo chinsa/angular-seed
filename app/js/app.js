@@ -2,33 +2,47 @@
   'use strict';
   angular.module('AppConfig', []).config([
     '$routeProvider', function($routeProvider) {
-      var _this = this;
+      var updateQuestionnIndex, updateQuestionnaire,
+        _this = this;
+      updateQuestionnaire = function(scope, next) {
+        var questionnaire, _ref;
+        questionnaire = (_ref = next.params.questionnaire) != null ? _ref : '';
+        return scope.$root.questionnaireId = questionnaire;
+      };
+      updateQuestionnIndex = function(scope, next) {
+        var questionIndex;
+        questionIndex = Number(next.params.questionIndex);
+        if ((questionIndex != null) && !isNaN(questionIndex)) {
+          return scope.$root.questionIndex = questionIndex;
+        } else {
+          return next.redirectTo = '/';
+        }
+      };
       $routeProvider.when('/', {
         template: '/templates/questionnaire-list.html'
       });
       $routeProvider.when('/:questionnaire', {
-        template: '/templates/questionnaire-details.html',
-        handler: function(current) {
-          return $rootScope.questionnaireId = current.params.questionnaire;
+        template: '/templates/questionnaire-detail.html',
+        handler: function(scope, next) {
+          return updateQuestionnaire(scope, next);
         }
       });
       $routeProvider.when('/:questionnaire/summary', {
         template: '/templates/questionnaire-summary.html',
-        handler: function(current) {
-          return $rootScope.questionnaireId = current.params.questionnaire;
+        handler: function(scope, next) {
+          return updateQuestionnaire(scope, next);
         }
       });
-      return $routeProvider.when('/:questionnaire/:question', {
+      $routeProvider.when('/:questionnaire/0', {
+        redirectTo: '/:questionnaire'
+      });
+      return $routeProvider.when('/:questionnaire/:questionIndex', {
         template: '/templates/question.html',
-        handler: function(current) {
-          $rootScope.questionnaireId = current.params.questionnaire;
-          return $rootScope.questionIndex = Number(current.params.question);
+        handler: function(scope, next) {
+          updateQuestionnaire(scope, next);
+          return updateQuestionnIndex(scope, next);
         }
       });
-    }
-  ]).run([
-    'PageRouter', function(PageRouter) {
-      return PageRouter.run();
     }
   ]);
 
